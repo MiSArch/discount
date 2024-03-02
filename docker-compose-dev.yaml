@@ -1,0 +1,27 @@
+services:
+  address-db:
+    extends:
+      file: docker-compose-base.yaml
+      service: address-db
+    ports:
+      - 5432:5432
+  address:
+    extends:
+      file: docker-compose-base.yaml
+      service: address
+    ports:
+      - 8080:8080
+  address-dapr:
+    extends:
+      file: docker-compose-base.yaml
+      service: address-dapr
+    volumes:
+      - "./.dapr/dapr-config-minimal.yaml:/config.yaml"
+      - "./.dapr/components:/components"
+  placement:
+    image: "daprio/dapr"
+    command: ["./placement", "-port", "50006"]
+    ports:
+      - "50006:50006"
+volumes:
+  address-db-data:

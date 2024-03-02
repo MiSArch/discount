@@ -1,0 +1,37 @@
+name: Update GraphQL schema
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency: ${{ github.workflow }}-${{ github.ref }}
+
+jobs:
+  schema:
+    name: Update GraphQL schema
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: Setup Gradle
+        uses: gradle/gradle-build-action@v2
+      - uses: actions/checkout@v4
+        with:
+          repository: "misarch/schemas"
+          path: "schemas"
+      - name: Execute Gradle build
+        run: ./gradlew build
+      - name: Save graphql schemas
+        run: |
+          chmod +x ./scripts/generate-graphql-schema.sh
+          ./scripts/generate-graphql-schema.sh
+      - uses: peter-evans/create-pull-request@v5
+        with:
+          path: ./schemas
+          commit-message: Update address schema
+          branch: update/address
+          token: ${{ secrets.SCHEMAS_PUSH_SECRET }}

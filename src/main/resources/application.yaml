@@ -1,0 +1,12 @@
+spring:
+  main:
+    allow-bean-definition-overriding: true
+  r2dbc:
+    url: r2dbc:postgresql://address-db:5432/address
+  flyway:
+    url: jdbc:postgresql://address-db:5432/address
+    locations: classpath:db/migration
+graphql:
+  packages: org.misarch.address
+  federation:
+    enabled: true
