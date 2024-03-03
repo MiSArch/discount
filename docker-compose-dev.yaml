@@ -1,20 +1,20 @@
 services:
-  address-db:
+  discount-db:
     extends:
       file: docker-compose-base.yaml
-      service: address-db
+      service: discount-db
     ports:
       - 5432:5432
-  address:
+  discount:
     extends:
       file: docker-compose-base.yaml
-      service: address
+      service: discount
     ports:
       - 8080:8080
-  address-dapr:
+  discount-dapr:
     extends:
       file: docker-compose-base.yaml
-      service: address-dapr
+      service: discount-dapr
     volumes:
       - "./.dapr/dapr-config-minimal.yaml:/config.yaml"
       - "./.dapr/components:/components"
@@ -24,4 +24,4 @@ services:
     ports:
       - "50006:50006"
 volumes:
-  address-db-data:
+  discount-db-data:

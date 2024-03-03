@@ -18,14 +18,14 @@ jobs:
           submodules: true
       - name: Update submodule
         run: |
-          cd address
+          cd discount
           git checkout ${{ github.sha }}
       - uses: peter-evans/create-pull-request@v5
         with:
-          commit-message: Update address submodule
-          branch: update/address
+          commit-message: Update discount submodule
+          branch: update/discount
           token: ${{ secrets.INFRASTRUCTURE_DOCKER_PUSH_SECRET }}
       - name: Set to auto merge
-        run: gh pr merge update/address --auto --merge -R misarch/infrastructure-docker
+        run: gh pr merge update/discount --auto --merge -R misarch/infrastructure-docker
         env:
           GH_TOKEN: ${{ secrets.INFRASTRUCTURE_DOCKER_PUSH_SECRET }}

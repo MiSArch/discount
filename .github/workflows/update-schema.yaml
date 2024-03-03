@@ -32,6 +32,6 @@ jobs:
       - uses: peter-evans/create-pull-request@v5
         with:
           path: ./schemas
-          commit-message: Update address schema
-          branch: update/address
+          commit-message: Update discount schema
+          branch: update/discount
           token: ${{ secrets.SCHEMAS_PUSH_SECRET }}

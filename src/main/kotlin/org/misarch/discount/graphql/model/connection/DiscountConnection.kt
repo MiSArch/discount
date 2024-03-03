@@ -8,40 +8,37 @@ import com.querydsl.core.types.dsl.ComparableExpression
 import com.querydsl.sql.SQLQuery
 import org.misarch.discount.graphql.AuthorizedUser
 import org.misarch.discount.graphql.model.Discount
-import org.misarch.discount.graphql.model.UserAddress
 import org.misarch.discount.graphql.model.connection.base.*
 import org.misarch.discount.persistence.model.DiscountEntity
-import org.misarch.discount.persistence.repository.AddressRepository
+import org.misarch.discount.persistence.repository.DiscountRepository
 
 /**
- * A GraphQL connection for [UserAddress]s.
+ * A GraphQL connection for [Discount]s.
  *
  * @param first The maximum number of items to return
  * @param skip The number of items to skip
- * @param filter The filter to apply to the items
  * @param predicate The predicate to filter the items by
  * @param order The order to sort the items by
  * @param repository The repository to fetch the items from
  * @param authorizedUser The authorized user
  * @param applyJoin A function to apply a join to the query
  */
-@GraphQLDescription("A connection to a list of `Address` values.")
+@GraphQLDescription("A connection to a list of `Discount` values.")
 @ShareableDirective
-class UserAddressConnection(
+class DiscountConnection(
     first: Int?,
     skip: Int?,
-    filter: UserAddressFilter?,
     predicate: BooleanExpression?,
-    order: UserAddressOrder?,
-    repository: AddressRepository,
+    order: DiscountOrder?,
+    repository: DiscountRepository,
     authorizedUser: AuthorizedUser?,
     applyJoin: (query: SQLQuery<*>) -> SQLQuery<*> = { it }
 ) : BaseConnection<Discount, DiscountEntity>(
     first,
     skip,
-    filter,
+    null,
     predicate,
-    (order ?: UserAddressOrder.DEFAULT).toOrderSpecifier(UserAddressOrderField.ID),
+    (order ?: DiscountOrder.DEFAULT).toOrderSpecifier(DiscountOrderField.ID),
     repository,
     DiscountEntity.ENTITY,
     authorizedUser,
@@ -51,43 +48,26 @@ class UserAddressConnection(
     override val primaryKey: ComparableExpression<*> get() = DiscountEntity.ENTITY.id
 
     @GraphQLDescription("The resulting items.")
-    override suspend fun nodes(): List<UserAddress> {
-        return super.nodes().map { it as UserAddress }
+    override suspend fun nodes(): List<Discount> {
+        return super.nodes().map { it as Discount }
     }
 
 }
 
-@GraphQLDescription("User address order fields")
-enum class UserAddressOrderField(override vararg val expressions: Expression<out Comparable<*>>) : BaseOrderField {
-    @GraphQLDescription("Order addresss by their id")
+@GraphQLDescription("Discount order fields")
+enum class DiscountOrderField(override vararg val expressions: Expression<out Comparable<*>>) : BaseOrderField {
+    @GraphQLDescription("Order discounts by their id")
     ID(DiscountEntity.ENTITY.id),
 
 
 }
 
-@GraphQLDescription("User address order")
-class UserAddressOrder(
-    direction: OrderDirection?, field: UserAddressOrderField?
-) : BaseOrder<UserAddressOrderField>(direction, field) {
+@GraphQLDescription("Discount order")
+class DiscountOrder(
+    direction: OrderDirection?, field: DiscountOrderField?
+) : BaseOrder<DiscountOrderField>(direction, field) {
 
     companion object {
-        val DEFAULT = UserAddressOrder(OrderDirection.ASC, UserAddressOrderField.ID)
+        val DEFAULT = DiscountOrder(OrderDirection.ASC, DiscountOrderField.ID)
     }
-}
-
-@GraphQLDescription("User address filter")
-class UserAddressFilter(
-    val isArchived: Boolean?
-) : BaseFilter {
-
-    override fun toExpression(): BooleanExpression? {
-        return if (isArchived != null) {
-            DiscountEntity.ENTITY.archivedAt.let {
-                if (isArchived) it.isNotNull else it.isNull
-            }
-        } else {
-            null
-        }
-    }
-
 }

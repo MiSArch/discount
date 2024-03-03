@@ -3,13 +3,12 @@ package org.misarch.discount.graphql
 import com.expediagroup.graphql.generator.annotations.GraphQLDescription
 import com.expediagroup.graphql.server.operations.Mutation
 import graphql.schema.DataFetchingEnvironment
-import org.misarch.discount.graphql.input.ArchiveUserAddressInput
-import org.misarch.discount.graphql.input.CreateUserAddressInput
-import org.misarch.discount.graphql.input.CreateVendorAddressInput
-import org.misarch.discount.graphql.model.UserAddress
-import org.misarch.discount.graphql.model.VendorAddress
-import org.misarch.discount.service.UserAddressService
-import org.misarch.discount.service.VendorAddressService
+import org.misarch.discount.graphql.input.CreateCouponInput
+import org.misarch.discount.graphql.input.CreateDiscountInput
+import org.misarch.discount.graphql.model.Coupon
+import org.misarch.discount.graphql.model.Discount
+import org.misarch.discount.service.CouponService
+import org.misarch.discount.service.DiscountService
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
@@ -17,48 +16,35 @@ import org.springframework.transaction.annotation.Transactional
 /**
  * Defines GraphQL mutations
  *
- * @property userAddressService service used to create and update user addresses
- * @property vendorAddressService service used to create vendor addresses
+ * @property discountService service used to create and update discounts
+ * @property couponService service used to create and update coupons
  */
 @Component
 @Transactional(propagation = Propagation.REQUIRES_NEW)
 class Mutation(
-    private val userAddressService: UserAddressService,
-    private val vendorAddressService: VendorAddressService
+    private val discountService: DiscountService,
+    private val couponService: CouponService
 ) : Mutation {
 
-    @GraphQLDescription("Create a new user address")
-    suspend fun createUserAddress(
-        @GraphQLDescription("Input for the createUserAddress mutation")
-        input: CreateUserAddressInput,
+    @GraphQLDescription("Create a new discount")
+    suspend fun createDiscount(
+        @GraphQLDescription("Input for the createDiscount mutation")
+        input: CreateDiscountInput,
         dfe: DataFetchingEnvironment
-    ): UserAddress {
-        val authorizedUser = dfe.authorizedUser
-        if (input.userId != authorizedUser.id) {
-            authorizedUser.checkIsEmployee()
-        }
-        val userAddress = userAddressService.createUserAddress(input)
-        return userAddress.toDTO() as UserAddress
-    }
-
-    @GraphQLDescription("Create a new vendor address")
-    suspend fun createVendorAddress(
-        @GraphQLDescription("Input for the createVendorAddress mutation")
-        input: CreateVendorAddressInput,
-        dfe: DataFetchingEnvironment
-    ): VendorAddress {
+    ): Discount {
         dfe.authorizedUser.checkIsEmployee()
-        val vendorAddress = vendorAddressService.createVendorAddress(input)
-        return vendorAddress.toDTO() as VendorAddress
+        val discount = discountService.createDiscount(input)
+        return discount.toDTO()
     }
 
-    @GraphQLDescription("Archive a user address")
-    suspend fun archiveUserAddress(
-        @GraphQLDescription("Input for the archiveUserAddress mutation")
-        input: ArchiveUserAddressInput,
+    @GraphQLDescription("Create a new coupon")
+    suspend fun createCoupon(
+        @GraphQLDescription("Input for the createCoupon mutation")
+        input: CreateCouponInput,
         dfe: DataFetchingEnvironment
-    ): UserAddress {
-        val userAddress = userAddressService.archiveUserAddress(input, dfe.authorizedUser)
-        return userAddress.toDTO() as UserAddress
+    ): Coupon {
+        dfe.authorizedUser.checkIsEmployee()
+        val coupon = couponService.createCoupon(input)
+        return coupon.toDTO()
     }
 }

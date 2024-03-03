@@ -2,11 +2,11 @@ spring:
   main:
     allow-bean-definition-overriding: true
   r2dbc:
-    url: r2dbc:postgresql://address-db:5432/address
+    url: r2dbc:postgresql://discount-db:5432/discount
   flyway:
-    url: jdbc:postgresql://address-db:5432/address
+    url: jdbc:postgresql://discount-db:5432/discount
     locations: classpath:db/migration
 graphql:
-  packages: org.misarch.address
+  packages: org.misarch.discount
   federation:
     enabled: true

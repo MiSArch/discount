@@ -1,13 +1,16 @@
 package org.misarch.discount.graphql.model
 
 import com.expediagroup.graphql.generator.annotations.GraphQLDescription
+import com.expediagroup.graphql.generator.federation.directives.FieldSet
+import com.expediagroup.graphql.generator.federation.directives.KeyDirective
 import java.time.OffsetDateTime
 import java.util.*
 
 @GraphQLDescription("A discount.")
+@KeyDirective(fields = FieldSet("id"))
 class Discount(
     id: UUID,
-    @property:GraphQLDescription("The discount applied to the order, e.g. 0.2 meaning a 20% reduction in price.")
+    @property:GraphQLDescription("The discount applied to the order item, e.g. 0.2 meaning a 20% reduction in price.")
     val discount: Double,
     @property:GraphQLDescription("The maximum number of times a user can use this discount in bought ProductItems.")
     val maxUsagesPerUser: Int?,

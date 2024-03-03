@@ -2,6 +2,6 @@ spring:
   r2dbc:
     username: postgres
     password: postgres
-    url: r2dbc:postgresql://localhost:5432/address
+    url: r2dbc:postgresql://localhost:5432/discount
   flyway:
-    url: jdbc:postgresql://localhost:5432/address
+    url: jdbc:postgresql://localhost:5432/discount

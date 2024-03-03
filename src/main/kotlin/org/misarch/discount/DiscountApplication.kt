@@ -6,8 +6,8 @@ import org.springframework.boot.runApplication
 
 @SpringBootApplication
 @EnableQuerydslR2dbcRepositories
-class AddressApplication
+class DiscountApplication
 
 fun main(args: Array<String>) {
-    runApplication<AddressApplication>(*args)
+    runApplication<DiscountApplication>(*args)
 }

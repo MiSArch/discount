@@ -2,25 +2,24 @@ package org.misarch.discount.graphql.federation
 
 import com.expediagroup.graphql.generator.federation.execution.FederatedTypePromiseResolver
 import graphql.schema.DataFetchingEnvironment
-import org.misarch.discount.graphql.dataloader.UserDataLoader
-import org.misarch.discount.graphql.model.User
+import org.misarch.discount.graphql.model.ProductVariant
 import org.springframework.stereotype.Component
 import java.util.*
 import java.util.concurrent.CompletableFuture
 
 /**
- * Federated resolver for [User]s.
+ * Federated resolver for [ProductVariant]s.
  */
 @Component
-class UserResolver : FederatedTypePromiseResolver<User> {
+class ProductVariantResolver : FederatedTypePromiseResolver<ProductVariant> {
     override val typeName: String
-        get() = User::class.simpleName!!
+        get() = ProductVariant::class.simpleName!!
 
     override fun resolve(
         environment: DataFetchingEnvironment, representation: Map<String, Any>
-    ): CompletableFuture<User?> {
+    ): CompletableFuture<ProductVariant?> {
         val id = representation["id"] as String?
         val uuid = UUID.fromString(id)
-        return CompletableFuture.completedFuture(User(uuid))
+        return CompletableFuture.completedFuture(ProductVariant(uuid))
     }
 }
