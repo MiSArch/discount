@@ -9,4 +9,13 @@ import java.util.*
  * Repository for [CouponEntity]s
  */
 @Repository
-interface CouponRepository : QuerydslR2dbcRepository<CouponEntity, UUID>
+interface CouponRepository : QuerydslR2dbcRepository<CouponEntity, UUID> {
+
+    /**
+     * Finds a coupon by its code
+     *
+     * @param code the code of the coupon
+     */
+    suspend fun findByCode(code: String): CouponEntity?
+
+}

@@ -5,6 +5,7 @@ import com.expediagroup.graphql.server.operations.Mutation
 import graphql.schema.DataFetchingEnvironment
 import org.misarch.discount.graphql.input.CreateCouponInput
 import org.misarch.discount.graphql.input.CreateDiscountInput
+import org.misarch.discount.graphql.input.RegisterCouponInput
 import org.misarch.discount.graphql.model.Coupon
 import org.misarch.discount.graphql.model.Discount
 import org.misarch.discount.service.CouponService
@@ -45,6 +46,18 @@ class Mutation(
     ): Coupon {
         dfe.authorizedUser.checkIsEmployee()
         val coupon = couponService.createCoupon(input)
+        return coupon.toDTO()
+    }
+
+    suspend fun registerCoupon(
+        @GraphQLDescription("Input for the registerCoupon mutation")
+        input: RegisterCouponInput,
+        dfe: DataFetchingEnvironment
+    ): Coupon {
+        if (dfe.authorizedUser.id != input.userId) {
+            dfe.authorizedUser.checkIsEmployee()
+        }
+        val coupon = couponService.registerCoupon(input)
         return coupon.toDTO()
     }
 }

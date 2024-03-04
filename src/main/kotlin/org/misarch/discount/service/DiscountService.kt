@@ -3,6 +3,7 @@ package org.misarch.discount.service
 import kotlinx.coroutines.reactor.awaitSingle
 import org.misarch.discount.event.DiscountEvents
 import org.misarch.discount.event.EventPublisher
+import org.misarch.discount.event.model.order.OrderDTO
 import org.misarch.discount.graphql.input.CreateDiscountInput
 import org.misarch.discount.persistence.model.DiscountEntity
 import org.misarch.discount.persistence.model.DiscountToCategoryEntity
@@ -43,7 +44,7 @@ class DiscountService(
      * @return the created discount
      */
     suspend fun createDiscount(discountInput: CreateDiscountInput): DiscountEntity {
-        ensureReferencedEntitiesExit(discountInput)
+        ensureReferencedEntitiesExist(discountInput)
         val discount = DiscountEntity(
             discount = discountInput.discount,
             maxUsagesPerUser = discountInput.maxUsagesPerUser,
@@ -69,14 +70,18 @@ class DiscountService(
      * @param discountInput the discount input
      * @throws IllegalArgumentException if any of the referenced entities do not exist
      */
-    private suspend fun ensureReferencedEntitiesExit(discountInput: CreateDiscountInput) {
-        val missingCategories =
-            discountInput.discountAppliesToCategoryIds.filter { !categoryRepository.existsById(it).awaitSingle() }
+    private suspend fun ensureReferencedEntitiesExist(discountInput: CreateDiscountInput) {
+        val categoryIds = discountInput.discountAppliesToCategoryIds.toSet()
+        val productIds = discountInput.discountAppliesToProductIds.toSet()
+        val productVariantIds = discountInput.discountAppliesToProductVariantIds.toSet()
+        require(categoryIds.isNotEmpty() || productIds.isNotEmpty() || productVariantIds.isNotEmpty()) {
+            "At least one category, product or product variant must be specified"
+        }
+        val missingCategories =categoryIds.filter { !categoryRepository.existsById(it).awaitSingle() }
         require(missingCategories.isEmpty()) { "Categories with ids $missingCategories do not exist" }
-        val missingProducts =
-            discountInput.discountAppliesToProductIds.filter { !productRepository.existsById(it).awaitSingle() }
+        val missingProducts = productIds.filter { !productRepository.existsById(it).awaitSingle() }
         require(missingProducts.isEmpty()) { "Products with ids $missingProducts do not exist" }
-        val missingProductVariants = discountInput.discountAppliesToProductVariantIds.filter {
+        val missingProductVariants = productVariantIds.filter {
             !productVariantRepository.existsById(it).awaitSingle()
         }
         require(missingProductVariants.isEmpty()) { "Product variants with ids $missingProductVariants do not exist" }
@@ -105,6 +110,17 @@ class DiscountService(
         discountToProductVariantRepository.saveAll(discountAppliesToProductVariantIds.map {
             DiscountToProductVariantEntity(discountId = id, productVariantId = it, id = null)
         }).collectList().awaitSingle()
+    }
+
+    /**
+     * Validates an order
+     * Checks if the user can still use the discounts with the amount of items
+     * Does NOT validate if the discount is even usable with the items in the order
+     *
+     * @param order the order to validate
+     */
+    suspend fun validateOrder(order: OrderDTO) {
+
     }
 
 }

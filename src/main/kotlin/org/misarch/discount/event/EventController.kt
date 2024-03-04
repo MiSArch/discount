@@ -6,6 +6,8 @@ import org.misarch.discount.event.model.*
 import org.misarch.discount.service.*
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Controller
+import org.springframework.transaction.annotation.Propagation
+import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.ResponseStatus
@@ -18,6 +20,7 @@ import org.springframework.web.bind.annotation.ResponseStatus
  * @param categoryService the category service
  * @param productVariantService the product variant service
  * @param productVariantVersionService the product variant version service
+ * @param discountService the discount service
  */
 @Controller
 class EventController(
@@ -25,7 +28,8 @@ class EventController(
     private val productService: ProductService,
     private val categoryService: CategoryService,
     private val productVariantService: ProductVariantService,
-    private val productVariantVersionService: ProductVariantVersionService
+    private val productVariantVersionService: ProductVariantVersionService,
+    private val discountService: DiscountService
 ) {
 
     /**
@@ -101,6 +105,22 @@ class EventController(
         cloudEvent: CloudEvent<ProductVariantVersionDTO>
     ) {
         productVariantVersionService.registerProductVariantVersion(cloudEvent.data)
+    }
+
+    /**
+     * Handles an inventory reservation succeeded event
+     *
+     * @param cloudEvent the cloud event containing the inventory reservation succeeded
+     */
+    @Topic(name = DiscountEvents.INVENTORY_RESERVATION_SUCCEEDED, pubsubName = DiscountEvents.PUBSUB_NAME)
+    @PostMapping("/subscription/${DiscountEvents.INVENTORY_RESERVATION_SUCCEEDED}")
+    @ResponseStatus(code = HttpStatus.OK)
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    suspend fun onInventoryReserved(
+        @RequestBody
+        cloudEvent: CloudEvent<ReservationSucceededDTO>
+    ) {
+        discountService.validateOrder(cloudEvent.data.order)
     }
 
 }

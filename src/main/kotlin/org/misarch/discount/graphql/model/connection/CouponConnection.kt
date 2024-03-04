@@ -7,13 +7,13 @@ import com.querydsl.core.types.dsl.BooleanExpression
 import com.querydsl.core.types.dsl.ComparableExpression
 import com.querydsl.sql.SQLQuery
 import org.misarch.discount.graphql.AuthorizedUser
-import org.misarch.discount.graphql.model.Discount
+import org.misarch.discount.graphql.model.Coupon
 import org.misarch.discount.graphql.model.connection.base.*
-import org.misarch.discount.persistence.model.DiscountEntity
-import org.misarch.discount.persistence.repository.DiscountRepository
+import org.misarch.discount.persistence.model.CouponEntity
+import org.misarch.discount.persistence.repository.CouponRepository
 
 /**
- * A GraphQL connection for [Discount]s.
+ * A GraphQL connection for [Coupon]s.
  *
  * @param first The maximum number of items to return
  * @param skip The number of items to skip
@@ -23,49 +23,49 @@ import org.misarch.discount.persistence.repository.DiscountRepository
  * @param authorizedUser The authorized user
  * @param applyJoin A function to apply a join to the query
  */
-@GraphQLDescription("A connection to a list of `Discount` values.")
+@GraphQLDescription("A connection to a list of `Coupon` values.")
 @ShareableDirective
-class DiscountConnection(
+class CouponConnection(
     first: Int?,
     skip: Int?,
     predicate: BooleanExpression?,
-    order: DiscountOrder?,
-    repository: DiscountRepository,
+    order: CouponOrder?,
+    repository: CouponRepository,
     authorizedUser: AuthorizedUser?,
     applyJoin: (query: SQLQuery<*>) -> SQLQuery<*> = { it }
-) : BaseConnection<Discount, DiscountEntity>(
+) : BaseConnection<Coupon, CouponEntity>(
     first,
     skip,
     null,
     predicate,
-    (order ?: DiscountOrder.DEFAULT).toOrderSpecifier(DiscountOrderField.ID),
+    (order ?: CouponOrder.DEFAULT).toOrderSpecifier(CouponOrderField.ID),
     repository,
-    DiscountEntity.ENTITY,
+    CouponEntity.ENTITY,
     authorizedUser,
     applyJoin
 ) {
 
-    override val primaryKey: ComparableExpression<*> get() = DiscountEntity.ENTITY.id
+    override val primaryKey: ComparableExpression<*> get() = CouponEntity.ENTITY.id
 
     @GraphQLDescription("The resulting items.")
-    override suspend fun nodes(): List<Discount> {
+    override suspend fun nodes(): List<Coupon> {
         return super.nodes().map { it }
     }
 
 }
 
-@GraphQLDescription("Discount order fields")
-enum class DiscountOrderField(override vararg val expressions: Expression<out Comparable<*>>) : BaseOrderField {
-    @GraphQLDescription("Order discounts by their id")
-    ID(DiscountEntity.ENTITY.id),
+@GraphQLDescription("Coupon order fields")
+enum class CouponOrderField(override vararg val expressions: Expression<out Comparable<*>>) : BaseOrderField {
+    @GraphQLDescription("Order coupons by their id")
+    ID(CouponEntity.ENTITY.id),
 }
 
-@GraphQLDescription("Discount order")
-class DiscountOrder(
-    direction: OrderDirection?, field: DiscountOrderField?
-) : BaseOrder<DiscountOrderField>(direction, field) {
+@GraphQLDescription("Coupon order")
+class CouponOrder(
+    direction: OrderDirection?, field: CouponOrderField?
+) : BaseOrder<CouponOrderField>(direction, field) {
 
     companion object {
-        val DEFAULT = DiscountOrder(OrderDirection.ASC, DiscountOrderField.ID)
+        val DEFAULT = CouponOrder(OrderDirection.ASC, CouponOrderField.ID)
     }
 }

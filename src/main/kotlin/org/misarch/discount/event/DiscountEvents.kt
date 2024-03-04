@@ -15,6 +15,21 @@ object DiscountEvents {
     const val COUPON_CREATED = "discount/coupon/created"
 
     /**
+     * Topic for order validation succeeded events (an order has been successfully validated)
+     */
+    const val VALIDATION_SUCCEEDED = "discount/order/validation-succeeded"
+
+    /**
+     * Topic for order validation failed events (an order has failed validation)
+     */
+    const val VALIDATION_FAILED = "discount/order/validation-failed"
+
+    /**
+     * Topic for order item reservation succeeded events by the inventory service
+     */
+    const val INVENTORY_RESERVATION_SUCCEEDED = "inventory/product-item/reservation-succeeded"
+
+    /**
      * Topic for user creation events (a user has been created)
      */
     const val USER_CREATED = "user/user/created"

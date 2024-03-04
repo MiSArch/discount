@@ -3,6 +3,7 @@ package org.misarch.discount.persistence.model
 import org.misarch.discount.event.model.CouponDTO
 import org.misarch.discount.graphql.model.Coupon
 import org.springframework.data.annotation.Id
+import org.springframework.data.annotation.ReadOnlyProperty
 import org.springframework.data.relational.core.mapping.Table
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
@@ -21,6 +22,7 @@ import java.util.*
  */
 @Table
 class CouponEntity(
+    @ReadOnlyProperty
     val usages: Int,
     val maxUsages: Int,
     val validUntil: OffsetDateTime,

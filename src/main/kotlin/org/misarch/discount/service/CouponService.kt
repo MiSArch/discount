@@ -4,8 +4,11 @@ import kotlinx.coroutines.reactor.awaitSingle
 import org.misarch.discount.event.DiscountEvents
 import org.misarch.discount.event.EventPublisher
 import org.misarch.discount.graphql.input.CreateCouponInput
+import org.misarch.discount.graphql.input.RegisterCouponInput
 import org.misarch.discount.persistence.model.CouponEntity
+import org.misarch.discount.persistence.model.CouponToUserEntity
 import org.misarch.discount.persistence.repository.CouponRepository
+import org.misarch.discount.persistence.repository.CouponToUserRepository
 import org.misarch.discount.persistence.repository.DiscountRepository
 
 /**
@@ -13,11 +16,13 @@ import org.misarch.discount.persistence.repository.DiscountRepository
  *
  * @param repository the provided repository
  * @param discountRepository the discount repository
+ * @param couponToUserRepository the coupon to user repository
  * @param eventPublisher the event publisher
  */
 class CouponService(
     repository: CouponRepository,
     private val discountRepository: DiscountRepository,
+    private val couponToUserRepository: CouponToUserRepository,
     private val eventPublisher: EventPublisher
 ) : BaseService<CouponEntity, CouponRepository>(repository) {
 
@@ -43,6 +48,20 @@ class CouponService(
         val savedCoupon = repository.save(coupon).awaitSingle()
         eventPublisher.publishEvent(DiscountEvents.COUPON_CREATED, savedCoupon.toEventDTO())
         return savedCoupon
+    }
+
+    /**
+     * Registers a coupon usage by a user
+     *
+     * @param input the input for the registration, defines the coupon and the user
+     * @return the registered coupon
+     */
+    suspend fun registerCoupon(input: RegisterCouponInput): CouponEntity {
+        val coupon = repository.findByCode(input.code)
+        require(coupon != null) { "Coupon with code ${input.code} does not exist" }
+        couponToUserRepository.save(CouponToUserEntity(couponId = coupon.id!!, userId = input.userId, id = null))
+            .awaitSingle()
+        return repository.findById(coupon.id).awaitSingle()
     }
 
 }
