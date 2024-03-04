@@ -47,9 +47,4 @@ class ProductConnection(
 
     override val primaryKey: ComparableExpression<*> get() = ProductEntity.ENTITY.id
 
-    @GraphQLDescription("The resulting items.")
-    override suspend fun nodes(): List<Product> {
-        return super.nodes().map { it }
-    }
-
 }

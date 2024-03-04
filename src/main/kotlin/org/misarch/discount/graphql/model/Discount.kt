@@ -117,14 +117,16 @@ class Discount(
         skip: Int? = null,
         @GraphQLDescription("Ordering")
         orderBy: CouponOrder? = null,
+        @GraphQLDescription("Filtering")
+        filter: CouponFilter? = null,
         @GraphQLIgnore
         @Autowired
         couponRepository: CouponRepository, dfe: DataFetchingEnvironment
     ): CouponConnection {
-        dfe.authorizedUser.checkIsEmployee()
         return CouponConnection(
             first,
             skip,
+            filter,
             CouponEntity.ENTITY.discountId.eq(id),
             orderBy,
             couponRepository,

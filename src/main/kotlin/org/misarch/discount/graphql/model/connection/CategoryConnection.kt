@@ -47,9 +47,4 @@ class CategoryConnection(
 
     override val primaryKey: ComparableExpression<*> get() = CategoryEntity.ENTITY.id
 
-    @GraphQLDescription("The resulting items.")
-    override suspend fun nodes(): List<Category> {
-        return super.nodes().map { it }
-    }
-
 }

@@ -18,7 +18,7 @@ import java.util.*
 class DiscountUsageEntity(
     val discountId: UUID,
     val userId: UUID,
-    val usages: Int,
+    val usages: Long,
     @Id
     override val id: UUID?
 ) : BaseEntity<DiscountUsage> {

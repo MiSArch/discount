@@ -5,18 +5,23 @@ import com.expediagroup.graphql.generator.federation.directives.ShareableDirecti
 import com.querydsl.core.types.Expression
 import com.querydsl.core.types.dsl.BooleanExpression
 import com.querydsl.core.types.dsl.ComparableExpression
+import com.querydsl.core.types.dsl.Expressions
+import com.querydsl.sql.SQLExpressions
 import com.querydsl.sql.SQLQuery
 import org.misarch.discount.graphql.AuthorizedUser
 import org.misarch.discount.graphql.model.Coupon
 import org.misarch.discount.graphql.model.connection.base.*
 import org.misarch.discount.persistence.model.CouponEntity
+import org.misarch.discount.persistence.model.CouponToUserEntity
 import org.misarch.discount.persistence.repository.CouponRepository
+import java.util.UUID
 
 /**
  * A GraphQL connection for [Coupon]s.
  *
  * @param first The maximum number of items to return
  * @param skip The number of items to skip
+ * @param filter The filter to apply to the items
  * @param predicate The predicate to filter the items by
  * @param order The order to sort the items by
  * @param repository The repository to fetch the items from
@@ -28,6 +33,7 @@ import org.misarch.discount.persistence.repository.CouponRepository
 class CouponConnection(
     first: Int?,
     skip: Int?,
+    filter: CouponFilter?,
     predicate: BooleanExpression?,
     order: CouponOrder?,
     repository: CouponRepository,
@@ -36,7 +42,7 @@ class CouponConnection(
 ) : BaseConnection<Coupon, CouponEntity>(
     first,
     skip,
-    null,
+    filter,
     predicate,
     (order ?: CouponOrder.DEFAULT).toOrderSpecifier(CouponOrderField.ID),
     repository,
@@ -47,9 +53,14 @@ class CouponConnection(
 
     override val primaryKey: ComparableExpression<*> get() = CouponEntity.ENTITY.id
 
-    @GraphQLDescription("The resulting items.")
-    override suspend fun nodes(): List<Coupon> {
-        return super.nodes().map { it }
+    override fun authorizedUserFilter(): BooleanExpression? {
+        return if (authorizedUser == null) {
+            Expressions.FALSE
+        } else if (authorizedUser.isEmployee) {
+            null
+        } else {
+            userHasCouponCondition(authorizedUser.id)
+        }
     }
 
 }
@@ -68,4 +79,38 @@ class CouponOrder(
     companion object {
         val DEFAULT = CouponOrder(OrderDirection.ASC, CouponOrderField.ID)
     }
+}
+
+@GraphQLDescription("Coupon filter")
+class CouponFilter(
+    @property:GraphQLDescription("Filter weather the user with the provided id own the coupon, other users than the authenticated user require at least EMPLOYEE")
+    val userHasCoupon: UUID?
+) : BaseFilter {
+
+    override fun toExpression(authorizedUser: AuthorizedUser?): BooleanExpression? {
+        return if (userHasCoupon != null) {
+            require(authorizedUser != null) {
+                "The userHasCoupon filter requires an authorized user"
+            }
+            if (userHasCoupon != authorizedUser.id) {
+                authorizedUser.checkIsEmployee()
+            }
+            userHasCouponCondition(userHasCoupon)
+        } else {
+            null
+        }
+    }
+}
+
+/**
+ * A function to filter the coupons by the user that owns them.
+ *
+ * @param userId The user id
+ * @return The predicate to filter the coupons by
+ */
+private fun userHasCouponCondition(userId: UUID): BooleanExpression {
+    return CouponEntity.ENTITY.id.`in`(
+        SQLExpressions.select(CouponToUserEntity.ENTITY.couponId).from(CouponToUserEntity.ENTITY)
+            .where(CouponToUserEntity.ENTITY.userId.eq(userId))
+    )
 }

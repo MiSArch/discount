@@ -7,10 +7,7 @@ import com.expediagroup.graphql.generator.federation.directives.KeyDirective
 import graphql.schema.DataFetchingEnvironment
 import org.misarch.discount.graphql.authorizedUser
 import org.misarch.discount.graphql.authorizedUserOrNull
-import org.misarch.discount.graphql.model.connection.CouponConnection
-import org.misarch.discount.graphql.model.connection.CouponOrder
-import org.misarch.discount.graphql.model.connection.DiscountUsageConnection
-import org.misarch.discount.graphql.model.connection.DiscountUsageOrder
+import org.misarch.discount.graphql.model.connection.*
 import org.misarch.discount.persistence.model.CouponEntity
 import org.misarch.discount.persistence.model.CouponToUserEntity
 import org.misarch.discount.persistence.model.DiscountUsageEntity
@@ -34,6 +31,8 @@ class User(
         skip: Int? = null,
         @GraphQLDescription("Ordering")
         orderBy: CouponOrder? = null,
+        @GraphQLDescription("Filtering")
+        filter: CouponFilter? = null,
         @GraphQLIgnore
         @Autowired
         couponRepository: CouponRepository, dfe: DataFetchingEnvironment
@@ -44,6 +43,7 @@ class User(
         return CouponConnection(
             first,
             skip,
+            filter,
             CouponToUserEntity.ENTITY.userId.eq(id),
             orderBy,
             couponRepository,

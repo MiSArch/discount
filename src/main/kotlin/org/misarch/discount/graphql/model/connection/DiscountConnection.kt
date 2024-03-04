@@ -47,11 +47,6 @@ class DiscountConnection(
 
     override val primaryKey: ComparableExpression<*> get() = DiscountEntity.ENTITY.id
 
-    @GraphQLDescription("The resulting items.")
-    override suspend fun nodes(): List<Discount> {
-        return super.nodes().map { it }
-    }
-
 }
 
 @GraphQLDescription("Discount order fields")

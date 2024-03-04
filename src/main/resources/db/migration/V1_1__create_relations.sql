@@ -89,9 +89,10 @@ CREATE TABLE DiscountUsageEntity(
     id UUID PRIMARY KEY UNIQUE DEFAULT uuid_generate_v4(),
     discountId UUID NOT NULL,
     userId UUID NOT NULL,
-    usages INTEGER NOT NULL DEFAULT 0,
+    usages BIGINT NOT NULL DEFAULT 0,
     FOREIGN KEY (discountId) REFERENCES DiscountEntity(id),
-    FOREIGN KEY (userId) REFERENCES UserEntity(id)
+    FOREIGN KEY (userId) REFERENCES UserEntity(id),
+    UNIQUE (discountId, userId)
 );
 )
 
@@ -125,3 +126,27 @@ BEFORE INSERT ON CouponToUserEntity
 FOR EACH ROW
 EXECUTE FUNCTION update_coupon_usages();
 
+CREATE OR REPLACE FUNCTION check_discount_usages()
+RETURNS TRIGGER AS $$
+DECLARE
+    max_usages_per_user INTEGER;
+BEGIN
+    IF TG_OP = 'INSERT' OR (TG_OP = 'UPDATE' AND NEW.usages > OLD.usages) THEN
+        SELECT maxUsagesPerUser
+        INTO max_usages_per_user
+        FROM DiscountEntity
+        WHERE id = NEW.discountId;
+
+        IF max_usages_per_user IS NOT NULL AND max_usages_per_user < NEW.usages THEN
+            RAISE EXCEPTION 'Usages exceed the maximum allowed per user for the discount';
+        END IF;
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER check_discount_usages_trigger
+BEFORE INSERT OR UPDATE OF usages ON DiscountUsageEntity
+FOR EACH ROW
+EXECUTE FUNCTION check_discount_usages();

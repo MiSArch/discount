@@ -111,7 +111,7 @@ abstract class BaseConnection<T, D : BaseEntity<T>>(
     private fun buildCondition(): BooleanExpression? {
         val conditions = listOfNotNull(
             predicate,
-            filter?.toExpression(),
+            filter?.toExpression(authorizedUser),
             authorizedUserFilter()
         )
         return conditions.reduceOrNull { acc, condition -> acc.and(condition) }

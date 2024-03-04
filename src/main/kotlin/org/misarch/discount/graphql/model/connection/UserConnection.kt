@@ -47,9 +47,4 @@ class UserConnection(
 
     override val primaryKey: ComparableExpression<*> get() = UserEntity.ENTITY.id
 
-    @GraphQLDescription("The resulting items.")
-    override suspend fun nodes(): List<User> {
-        return super.nodes().map { it }
-    }
-
 }

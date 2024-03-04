@@ -3,6 +3,8 @@ package org.misarch.discount.service
 import kotlinx.coroutines.reactor.awaitSingle
 import org.misarch.discount.event.DiscountEvents
 import org.misarch.discount.event.EventPublisher
+import org.misarch.discount.event.model.ValidationFailedDTO
+import org.misarch.discount.event.model.ValidationSucceededDTO
 import org.misarch.discount.event.model.order.OrderDTO
 import org.misarch.discount.graphql.input.CreateDiscountInput
 import org.misarch.discount.persistence.model.DiscountEntity
@@ -23,6 +25,7 @@ import java.util.*
  * @param discountToCategoryRepository the discount to category repository
  * @param discountToProductRepository the discount to product repository
  * @param discountToProductVariantRepository the discount to product variant repository
+ * @param discountUsageRepository the discount usage repository
  * @param eventPublisher the event publisher
  */
 @Service
@@ -34,6 +37,7 @@ class DiscountService(
     private val discountToCategoryRepository: DiscountToCategoryRepository,
     private val discountToProductRepository: DiscountToProductRepository,
     private val discountToProductVariantRepository: DiscountToProductVariantRepository,
+    private val discountUsageRepository: DiscountUsageRepository,
     private val eventPublisher: EventPublisher
 ) : BaseService<DiscountEntity, DiscountRepository>(repository) {
 
@@ -77,7 +81,7 @@ class DiscountService(
         require(categoryIds.isNotEmpty() || productIds.isNotEmpty() || productVariantIds.isNotEmpty()) {
             "At least one category, product or product variant must be specified"
         }
-        val missingCategories =categoryIds.filter { !categoryRepository.existsById(it).awaitSingle() }
+        val missingCategories = categoryIds.filter { !categoryRepository.existsById(it).awaitSingle() }
         require(missingCategories.isEmpty()) { "Categories with ids $missingCategories do not exist" }
         val missingProducts = productIds.filter { !productRepository.existsById(it).awaitSingle() }
         require(missingProducts.isEmpty()) { "Products with ids $missingProducts do not exist" }
@@ -120,7 +124,44 @@ class DiscountService(
      * @param order the order to validate
      */
     suspend fun validateOrder(order: OrderDTO) {
+        try {
+            validateOrderInternal(order)
+        } catch (e: Exception) {
+            eventPublisher.publishEvent(DiscountEvents.VALIDATION_FAILED, ValidationFailedDTO(order, emptyList()))
+            throw e
+        }
+    }
 
+    /**
+     * Validates an order
+     * Checks if the user can still use the discounts with the amount of items
+     * Does NOT validate if the discount is even usable with the items in the order
+     * Does not handle exceptions!
+     *
+     * @param order the order to validate
+     */
+    private suspend fun validateOrderInternal(order: OrderDTO) {
+        val orderItemsByDiscount = order.orderItems.flatMap { orderItem ->
+            orderItem.discountIds.map { it to orderItem }
+        }.groupBy({ it.first }) { it.second }
+        val discounts =
+            repository.findAllById(orderItemsByDiscount.keys).collectList().awaitSingle().associateBy { it.id }
+        val failedDiscounts = mutableListOf<UUID>()
+        orderItemsByDiscount.forEach { (discount, orderItems) ->
+            val totalAmount = orderItems.sumOf { it.count }
+            val currentAmount = discountUsageRepository.findByUserIdAndDiscountId(order.userId, discount)?.usages ?: 0
+            if (currentAmount + totalAmount > (discounts[discount]!!.maxUsagesPerUser?.toLong() ?: Long.MAX_VALUE)) {
+                failedDiscounts += discount
+            }
+        }
+        if (failedDiscounts.isNotEmpty()) {
+            eventPublisher.publishEvent(DiscountEvents.VALIDATION_FAILED, ValidationFailedDTO(order, failedDiscounts))
+        } else {
+            orderItemsByDiscount.forEach { (discount, orderItems) ->
+                discountUsageRepository.upsertDiscountUsage(discount, order.userId, orderItems.sumOf { it.count })
+            }
+            eventPublisher.publishEvent(DiscountEvents.VALIDATION_SUCCEEDED, ValidationSucceededDTO(order))
+        }
     }
 
 }
