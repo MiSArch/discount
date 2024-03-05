@@ -24,10 +24,10 @@ import java.util.*
 class CouponEntity(
     @ReadOnlyProperty
     val usages: Int,
-    val maxUsages: Int,
-    val validUntil: OffsetDateTime,
-    val validFrom: OffsetDateTime,
-    val code: String,
+    var maxUsages: Int?,
+    var validUntil: OffsetDateTime,
+    var validFrom: OffsetDateTime,
+    var code: String,
     val discountId: UUID,
     @Id
     override val id: UUID?

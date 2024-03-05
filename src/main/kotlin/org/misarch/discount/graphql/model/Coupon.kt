@@ -25,7 +25,7 @@ import java.util.concurrent.CompletableFuture
 class Coupon(
     id: UUID,
     private val usages: Int,
-    private val maxUsages: Int,
+    private val maxUsages: Int?,
     @property:GraphQLDescription("The date and time until which the coupon is valid.")
     val validUntil: OffsetDateTime,
     @property:GraphQLDescription("The date and time from which the coupon is valid.")
@@ -42,7 +42,7 @@ class Coupon(
     }
 
     @GraphQLDescription("The maximum number of times the coupon can be used.")
-    fun maxUsages(dfe: DataFetchingEnvironment): Int {
+    fun maxUsages(dfe: DataFetchingEnvironment): Int? {
         dfe.authorizedUser.checkIsEmployee()
         return maxUsages
     }

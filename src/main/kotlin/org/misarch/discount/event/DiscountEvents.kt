@@ -15,6 +15,16 @@ object DiscountEvents {
     const val COUPON_CREATED = "discount/coupon/created"
 
     /**
+     * Topic for discount updated events (a discount has been updated)
+     */
+    const val DISCOUNT_UPDATED = "discount/discount/updated"
+
+    /**
+     * Topic for coupon updated events (a coupon has been updated)
+     */
+    const val COUPON_UPDATED = "discount/coupon/updated"
+
+    /**
      * Topic for order validation succeeded events (an order has been successfully validated)
      */
     const val VALIDATION_SUCCEEDED = "discount/order/validation-succeeded"

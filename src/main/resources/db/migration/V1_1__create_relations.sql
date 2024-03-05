@@ -41,7 +41,7 @@ CREATE TABLE DiscountEntity (
 CREATE TABLE CouponEntity (
     id UUID PRIMARY KEY UNIQUE DEFAULT uuid_generate_v4(),
     usages INTEGER NOT NULL DEFAULT 0,
-    maxUsages INTEGER NOT NULL,
+    maxUsages INTEGER NULL,
     validFrom TIMESTAMPTZ NOT NULL,
     validUntil TIMESTAMPTZ NOT NULL,
     code VARCHAR(255) NOT NULL,

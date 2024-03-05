@@ -21,10 +21,10 @@ import java.util.*
 @Table
 class DiscountEntity(
     val discount: Double,
-    val maxUsagesPerUser: Int?,
-    val validUntil: OffsetDateTime,
-    val validFrom: OffsetDateTime,
-    val minOrderAmount: Int?,
+    var maxUsagesPerUser: Int?,
+    var validUntil: OffsetDateTime,
+    var validFrom: OffsetDateTime,
+    var minOrderAmount: Int?,
     @Id
     override val id: UUID?
 ) : BaseEntity<Discount> {

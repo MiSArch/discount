@@ -1,10 +1,12 @@
 package org.misarch.discount.service
 
+import com.expediagroup.graphql.generator.execution.OptionalInput
 import kotlinx.coroutines.reactor.awaitSingle
 import org.misarch.discount.event.DiscountEvents
 import org.misarch.discount.event.EventPublisher
 import org.misarch.discount.graphql.input.CreateCouponInput
 import org.misarch.discount.graphql.input.RegisterCouponInput
+import org.misarch.discount.graphql.input.UpdateCouponInput
 import org.misarch.discount.persistence.model.CouponEntity
 import org.misarch.discount.persistence.model.CouponToUserEntity
 import org.misarch.discount.persistence.repository.CouponRepository
@@ -48,6 +50,31 @@ class CouponService(
         val savedCoupon = repository.save(coupon).awaitSingle()
         eventPublisher.publishEvent(DiscountEvents.COUPON_CREATED, savedCoupon.toEventDTO())
         return savedCoupon
+    }
+
+    /**
+     * Updates a coupon
+     *
+     * @param couponInput the input for the update
+     * @return the updated coupon
+     */
+    suspend fun updateCoupon(couponInput: UpdateCouponInput): CouponEntity {
+        val coupon = repository.findById(couponInput.id).awaitSingle()
+        if (couponInput.code != null) {
+            coupon.code = couponInput.code
+        }
+        if (couponInput.validUntil != null) {
+            coupon.validUntil = couponInput.validUntil
+        }
+        if (couponInput.validFrom != null) {
+            coupon.validFrom = couponInput.validFrom
+        }
+        if (couponInput.maxUsages is OptionalInput.Defined) {
+            coupon.maxUsages = couponInput.maxUsages.value
+        }
+        val updatedCoupon = repository.save(coupon).awaitSingle()
+        eventPublisher.publishEvent(DiscountEvents.COUPON_UPDATED, updatedCoupon.toEventDTO())
+        return updatedCoupon
     }
 
     /**

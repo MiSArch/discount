@@ -14,7 +14,7 @@ import java.util.*
  */
 data class CouponDTO(
     val id: UUID,
-    val maxUsages: Int,
+    val maxUsages: Int?,
     val validUntil: String,
     val validFrom: String,
     val code: String,
