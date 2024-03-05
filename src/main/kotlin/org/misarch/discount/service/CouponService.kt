@@ -12,6 +12,7 @@ import org.misarch.discount.persistence.model.CouponToUserEntity
 import org.misarch.discount.persistence.repository.CouponRepository
 import org.misarch.discount.persistence.repository.CouponToUserRepository
 import org.misarch.discount.persistence.repository.DiscountRepository
+import org.springframework.stereotype.Service
 
 /**
  * Service for [CouponEntity]s
@@ -21,6 +22,7 @@ import org.misarch.discount.persistence.repository.DiscountRepository
  * @param couponToUserRepository the coupon to user repository
  * @param eventPublisher the event publisher
  */
+@Service
 class CouponService(
     repository: CouponRepository,
     private val discountRepository: DiscountRepository,

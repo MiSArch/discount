@@ -35,7 +35,7 @@ class DiscountUsageEntity(
             id = id!!,
             discountId = discountId,
             userId = userId,
-            usages = usages
+            usages = usages.toInt()
         )
     }
 }

@@ -14,7 +14,7 @@ import java.util.concurrent.CompletableFuture
 class DiscountUsage(
     id: UUID,
     @property:GraphQLDescription("The amount of items the user has used this discount for.")
-    val usages: Long,
+    val usages: Int,
     private val discountId: UUID,
     private val userId: UUID
 ) : Node(id) {
