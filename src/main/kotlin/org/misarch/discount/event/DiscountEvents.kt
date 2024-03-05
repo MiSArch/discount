@@ -55,11 +55,6 @@ object DiscountEvents {
     const val PRODUCT_VARIANT_CREATED = "catalog/product-variant/created"
 
     /**
-     * Topic for product variant version creation events (a product variant version has been created)
-     */
-    const val PRODUCT_VARIANT_VERSION_CREATED = "catalog/product-variant-version/created"
-
-    /**
      * Topic for category creation events (a category has been created)
      */
     const val CATEGORY_CREATED = "catalog/category/created"

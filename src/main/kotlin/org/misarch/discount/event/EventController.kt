@@ -19,7 +19,6 @@ import org.springframework.web.bind.annotation.ResponseStatus
  * @param productService the product service
  * @param categoryService the category service
  * @param productVariantService the product variant service
- * @param productVariantVersionService the product variant version service
  * @param discountService the discount service
  */
 @Controller
@@ -28,7 +27,6 @@ class EventController(
     private val productService: ProductService,
     private val categoryService: CategoryService,
     private val productVariantService: ProductVariantService,
-    private val productVariantVersionService: ProductVariantVersionService,
     private val discountService: DiscountService
 ) {
 
@@ -90,21 +88,6 @@ class EventController(
         cloudEvent: CloudEvent<ProductVariantDTO>
     ) {
         productVariantService.registerProductVariant(cloudEvent.data)
-    }
-
-    /**
-     * Handles a product variant version created event
-     *
-     * @param cloudEvent the cloud event containing the product variant version created
-     */
-    @Topic(name = DiscountEvents.PRODUCT_VARIANT_VERSION_CREATED, pubsubName = DiscountEvents.PUBSUB_NAME)
-    @PostMapping("/subscription/${DiscountEvents.PRODUCT_VARIANT_VERSION_CREATED}")
-    @ResponseStatus(code = HttpStatus.OK)
-    suspend fun onProductVariantVersionCreated(
-        @RequestBody
-        cloudEvent: CloudEvent<ProductVariantVersionDTO>
-    ) {
-        productVariantVersionService.registerProductVariantVersion(cloudEvent.data)
     }
 
     /**

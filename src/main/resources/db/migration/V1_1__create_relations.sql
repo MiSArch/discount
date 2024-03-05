@@ -13,11 +13,6 @@ CREATE TABLE ProductVariantEntity (
     productId UUID NOT NULL
 );
 
-CREATE TABLE ProductVariantVersionEntity (
-    id UUID PRIMARY KEY UNIQUE,
-    productVariantId UUID NOT NULL
-);
-
 CREATE TABLE CategoryEntity (
     id UUID PRIMARY KEY UNIQUE
 );
