@@ -105,7 +105,7 @@ BEGIN
 
     current_usages := current_usages + 1;
 
-    IF current_usages > max_usages THEN
+    IF max_usages IS NOT NULL AND current_usages > max_usages THEN
         RAISE EXCEPTION 'Coupon usages exceeded maximum limit';
     END IF;
 
