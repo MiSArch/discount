@@ -10,6 +10,9 @@ import java.util.*
 
 /**
  * Entity for discounts
+ * Discounts are applied relative to the original price: a discount of 0.2 is a 20% reduction in price.
+ * Multiple discounts are applied multiplicatively:
+ * discounted = original * (1 - discount1) * (1 - discount2) * ...
  *
  * @property discount the discount applied to the order item
  * @property maxUsagesPerUser the maximum number of times a user can use this discount in bought ProductItems

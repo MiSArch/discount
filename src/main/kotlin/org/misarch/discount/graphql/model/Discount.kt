@@ -15,11 +15,23 @@ import org.springframework.beans.factory.annotation.Autowired
 import java.time.OffsetDateTime
 import java.util.*
 
-@GraphQLDescription("A discount.")
+@GraphQLDescription(
+    """
+    A discount.
+    Multiple discounts are applied multiplicatively:
+    discounted = original * (1 - discount1) * (1 - discount2) * ...
+    """
+)
 @KeyDirective(fields = FieldSet("id"))
 class Discount(
     id: UUID,
-    @property:GraphQLDescription("The discount applied to the order item, e.g. 0.2 meaning a 20% reduction in price.")
+    @property:GraphQLDescription(
+        """
+        The discount applied to the order item, e.g. 0.2 meaning a 20% reduction in price.
+        Multiple discounts are applied multiplicatively:
+        discounted = original * (1 - discount1) * (1 - discount2) * ...
+        """
+    )
     val discount: Double,
     @property:GraphQLDescription("The maximum number of times a user can use this discount in bought ProductItems.")
     val maxUsagesPerUser: Int?,

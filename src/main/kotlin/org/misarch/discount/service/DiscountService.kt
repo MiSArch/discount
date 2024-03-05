@@ -57,6 +57,8 @@ class DiscountService(
      */
     suspend fun createDiscount(discountInput: CreateDiscountInput): DiscountEntity {
         ensureReferencedEntitiesExist(discountInput)
+        require(discountInput.discount >= 0) { "A discount cannot increase the price and thus must be >= 0" }
+        require(discountInput.discount <= 1) { "A discount cannot be larger than 1" }
         val discount = DiscountEntity(
             discount = discountInput.discount,
             maxUsagesPerUser = discountInput.maxUsagesPerUser,
