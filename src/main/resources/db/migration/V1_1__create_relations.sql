@@ -105,8 +105,8 @@ BEGIN
 
     current_usages := current_usages + 1;
 
-    IF current_usages > max_usages THEN
-        RAISE EXCEPTION 'Coupon usages exceeded maximum limit';
+    IF max_usages IS NOT NULL AND current_usages > max_usages THEN
+        RAISE EXCEPTION 'Coupon has been used too often';
     END IF;
 
     UPDATE CouponEntity
@@ -134,7 +134,7 @@ BEGIN
         WHERE id = NEW.discountId;
 
         IF max_usages_per_user IS NOT NULL AND max_usages_per_user < NEW.usages THEN
-            RAISE EXCEPTION 'Usages exceed the maximum allowed per user for the discount';
+            RAISE EXCEPTION 'The user has applied the discount too often';
         END IF;
     END IF;
 
