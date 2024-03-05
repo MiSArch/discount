@@ -2,6 +2,8 @@ package org.misarch.discount.graphql.model
 
 import com.expediagroup.graphql.generator.annotations.GraphQLDescription
 import com.expediagroup.graphql.generator.annotations.GraphQLIgnore
+import com.expediagroup.graphql.generator.federation.directives.FieldSet
+import com.expediagroup.graphql.generator.federation.directives.KeyDirective
 import graphql.schema.DataFetchingEnvironment
 import org.misarch.discount.graphql.authorizedUser
 import org.misarch.discount.graphql.authorizedUserOrNull
@@ -14,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import java.util.*
 
 @GraphQLDescription("A product")
+@KeyDirective(fields = FieldSet("id"))
 class Product(
     id: UUID
 ) : Node(id) {

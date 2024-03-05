@@ -46,7 +46,8 @@ CREATE TABLE CouponEntity (
     validUntil TIMESTAMPTZ NOT NULL,
     code VARCHAR(255) NOT NULL,
     discountId UUID NOT NULL,
-    FOREIGN KEY (discountId) REFERENCES DiscountEntity(id)
+    FOREIGN KEY (discountId) REFERENCES DiscountEntity(id),
+    UNIQUE (code)
 );
 
 CREATE TABLE CouponToUserEntity (
@@ -102,7 +103,7 @@ DECLARE
     current_usages INTEGER;
     max_usages INTEGER;
 BEGIN
-    SELECT couponEntity.usages, couponEntity.max_usages
+    SELECT couponEntity.usages, couponEntity.maxUsages
     INTO current_usages, max_usages
     FROM CouponEntity couponEntity
     WHERE couponEntity.id = NEW.couponId;

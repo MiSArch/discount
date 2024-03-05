@@ -13,6 +13,7 @@ import org.misarch.discount.persistence.repository.CouponRepository
 import org.misarch.discount.persistence.repository.CouponToUserRepository
 import org.misarch.discount.persistence.repository.DiscountRepository
 import org.springframework.stereotype.Service
+import java.time.OffsetDateTime
 
 /**
  * Service for [CouponEntity]s
@@ -40,6 +41,7 @@ class CouponService(
         require(
             discountRepository.existsById(couponInput.discountId).awaitSingle()
         ) { "Discount with id ${couponInput.discountId} does not exist" }
+        require(repository.findByCode(couponInput.code) == null) { "Coupon with code ${couponInput.code} already exists" }
         val coupon = CouponEntity(
             maxUsages = couponInput.maxUsages,
             usages = 0,
@@ -88,6 +90,10 @@ class CouponService(
     suspend fun registerCoupon(input: RegisterCouponInput): CouponEntity {
         val coupon = repository.findByCode(input.code)
         require(coupon != null) { "Coupon with code ${input.code} does not exist" }
+        val now = OffsetDateTime.now()
+        require(coupon.validFrom.isBefore(now) && coupon.validUntil.isAfter(now)) {
+            "Coupon with code ${input.code} is not valid currently"
+        }
         couponToUserRepository.save(CouponToUserEntity(couponId = coupon.id!!, userId = input.userId, id = null))
             .awaitSingle()
         return repository.findById(coupon.id).awaitSingle()

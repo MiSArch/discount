@@ -15,7 +15,7 @@ class CreateDiscountInput(
     @property:GraphQLDescription("The date and time from which the discount is valid.")
     val validFrom: OffsetDateTime,
     @property:GraphQLDescription("The minimum order amount required to use this discount.")
-    val minOrderAmount: Int,
+    val minOrderAmount: Int?,
     @property:GraphQLDescription("The category ids to which the discount applies.")
     val discountAppliesToCategoryIds: List<UUID>,
     @property:GraphQLDescription("The product ids to which the discount applies.")

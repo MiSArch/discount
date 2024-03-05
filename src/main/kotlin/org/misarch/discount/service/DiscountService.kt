@@ -18,6 +18,7 @@ import org.misarch.discount.graphql.input.UpdateDiscountInput
 import org.misarch.discount.persistence.model.*
 import org.misarch.discount.persistence.repository.*
 import org.springframework.stereotype.Service
+import java.time.OffsetDateTime
 import java.util.*
 
 /**
@@ -101,7 +102,8 @@ class DiscountService(
             DiscountEvents.DISCOUNT_UPDATED, updatedDiscount.toEventDTO(
                 discountToCategoryRepository.findByDiscountId(discountInput.id).map { it.categoryId }.toSet(),
                 discountToProductRepository.findByDiscountId(discountInput.id).map { it.productId }.toSet(),
-                discountToProductVariantRepository.findByDiscountId(discountInput.id).map { it.productVariantId }.toSet()
+                discountToProductVariantRepository.findByDiscountId(discountInput.id).map { it.productVariantId }
+                    .toSet()
             )
         )
         return updatedDiscount
@@ -295,7 +297,9 @@ class DiscountService(
                 )
             )
         )
+        val currentlyValidCondition = generateIsCurrentlyValidCondition()
         val condition = appliesCondition.and(usagesCondition).and(noCouponsCondition.or(couponsCondition))
+            .and(currentlyValidCondition)
         return condition
     }
 
@@ -322,8 +326,19 @@ class DiscountService(
                     ).exists()
             hasNoRequiredCouponsCondition.or(userHasCouponCondition)
         }
-        val discountAppliesCondition = appliesCondition.and(couponsCondition)
+        val currentlyValidCondition = generateIsCurrentlyValidCondition()
+        val discountAppliesCondition = appliesCondition.and(couponsCondition).and(currentlyValidCondition)
         return discountAppliesCondition
+    }
+
+    /**
+     * Generates a condition that checks that a discount is currently valid
+     *
+     * @return The condition
+     */
+    private fun generateIsCurrentlyValidCondition(): BooleanExpression {
+        val now = Expressions.constant(OffsetDateTime.now())
+        return DiscountEntity.ENTITY.validFrom.loe(now).and(DiscountEntity.ENTITY.validUntil.goe(now))
     }
 
     /**
