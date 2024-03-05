@@ -134,7 +134,7 @@ BEGIN
         WHERE id = NEW.discountId;
 
         IF max_usages_per_user IS NOT NULL AND max_usages_per_user < NEW.usages THEN
-            RAISE EXCEPTION 'Usages exceed the maximum allowed per user for the discount';
+            RAISE EXCEPTION 'The user has applied the discount too often';
         END IF;
     END IF;
 
