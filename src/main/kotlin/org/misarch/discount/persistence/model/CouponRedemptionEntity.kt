@@ -12,7 +12,7 @@ import java.util.*
  * @property id unique identifier of the join table row, technical requirement, not used in the domain
  */
 @Table
-class CouponToUserEntity(
+class CouponRedemptionEntity(
     val couponId: UUID,
     val userId: UUID,
     @Id
@@ -23,7 +23,7 @@ class CouponToUserEntity(
         /**
          * Querydsl entity
          */
-        val ENTITY = QCouponToUserEntity.couponToUserEntity!!
+        val ENTITY = QCouponRedemptionEntity.couponRedemptionEntity!!
     }
 
 }

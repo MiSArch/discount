@@ -287,9 +287,9 @@ class DiscountService(
         val noCouponsCondition = generateNoCouponsCondition()
         val couponsCondition = DiscountEntity.ENTITY.id.`in`(
             SQLExpressions.select(CouponEntity.ENTITY.discountId).from(CouponEntity.ENTITY)
-                .join(CouponToUserEntity.ENTITY).on(CouponToUserEntity.ENTITY.couponId.eq(CouponEntity.ENTITY.id))
+                .join(CouponRedemptionEntity.ENTITY).on(CouponRedemptionEntity.ENTITY.couponId.eq(CouponEntity.ENTITY.id))
                 .where(
-                    CouponEntity.ENTITY.id.`in`(input.couponIds).and(CouponToUserEntity.ENTITY.userId.eq(input.userId))
+                    CouponEntity.ENTITY.id.`in`(input.couponIds).and(CouponRedemptionEntity.ENTITY.userId.eq(input.userId))
                 )
         )
         val usagesCondition = DiscountEntity.ENTITY.maxUsagesPerUser.isNull.or(
@@ -321,10 +321,10 @@ class DiscountService(
             hasNoRequiredCouponsCondition
         } else {
             val userHasCouponCondition =
-                SQLExpressions.select(Expressions.TRUE).from(CouponEntity.ENTITY).join(CouponToUserEntity.ENTITY)
-                    .on(CouponEntity.ENTITY.id.eq(CouponToUserEntity.ENTITY.couponId)).where(
+                SQLExpressions.select(Expressions.TRUE).from(CouponEntity.ENTITY).join(CouponRedemptionEntity.ENTITY)
+                    .on(CouponEntity.ENTITY.id.eq(CouponRedemptionEntity.ENTITY.couponId)).where(
                         CouponEntity.ENTITY.discountId.eq(DiscountEntity.ENTITY.id)
-                            .and(CouponToUserEntity.ENTITY.userId.eq(authorizedUser.id))
+                            .and(CouponRedemptionEntity.ENTITY.userId.eq(authorizedUser.id))
                     ).exists()
             hasNoRequiredCouponsCondition.or(userHasCouponCondition)
         }

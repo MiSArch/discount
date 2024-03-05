@@ -10,9 +10,7 @@ import org.misarch.discount.graphql.authorizedUserOrNull
 import org.misarch.discount.graphql.dataloader.DiscountDataLoader
 import org.misarch.discount.graphql.model.connection.UserConnection
 import org.misarch.discount.graphql.model.connection.base.CommonOrder
-import org.misarch.discount.persistence.model.CouponToUserEntity
-import org.misarch.discount.persistence.model.DiscountToProductVariantEntity
-import org.misarch.discount.persistence.model.ProductVariantEntity
+import org.misarch.discount.persistence.model.CouponRedemptionEntity
 import org.misarch.discount.persistence.model.UserEntity
 import org.misarch.discount.persistence.repository.UserRepository
 import org.springframework.beans.factory.annotation.Autowired
@@ -71,13 +69,13 @@ class Coupon(
         return UserConnection(
             first,
             skip,
-            CouponToUserEntity.ENTITY.couponId.eq(id),
+            CouponRedemptionEntity.ENTITY.couponId.eq(id),
             orderBy,
             userRepository,
             dfe.authorizedUserOrNull
         ) {
-            it.innerJoin(CouponToUserEntity.ENTITY)
-                .on(CouponToUserEntity.ENTITY.userId.eq(UserEntity.ENTITY.id))
+            it.innerJoin(CouponRedemptionEntity.ENTITY)
+                .on(CouponRedemptionEntity.ENTITY.userId.eq(UserEntity.ENTITY.id))
         }
     }
 

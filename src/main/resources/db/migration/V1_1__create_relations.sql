@@ -45,7 +45,7 @@ CREATE TABLE CouponEntity (
     UNIQUE (code)
 );
 
-CREATE TABLE CouponToUserEntity (
+CREATE TABLE CouponRedemptionEntity (
     id UUID PRIMARY KEY UNIQUE DEFAULT uuid_generate_v4(),
     couponId UUID NOT NULL,
     userId UUID NOT NULL,
@@ -118,7 +118,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER before_insert_update_coupon_usages
-BEFORE INSERT ON CouponToUserEntity
+BEFORE INSERT ON CouponRedemptionEntity
 FOR EACH ROW
 EXECUTE FUNCTION update_coupon_usages();
 

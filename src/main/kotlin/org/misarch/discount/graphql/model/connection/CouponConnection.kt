@@ -12,7 +12,7 @@ import org.misarch.discount.graphql.AuthorizedUser
 import org.misarch.discount.graphql.model.Coupon
 import org.misarch.discount.graphql.model.connection.base.*
 import org.misarch.discount.persistence.model.CouponEntity
-import org.misarch.discount.persistence.model.CouponToUserEntity
+import org.misarch.discount.persistence.model.CouponRedemptionEntity
 import org.misarch.discount.persistence.repository.CouponRepository
 import java.util.UUID
 
@@ -110,7 +110,7 @@ class CouponFilter(
  */
 private fun userHasCouponCondition(userId: UUID): BooleanExpression {
     return CouponEntity.ENTITY.id.`in`(
-        SQLExpressions.select(CouponToUserEntity.ENTITY.couponId).from(CouponToUserEntity.ENTITY)
-            .where(CouponToUserEntity.ENTITY.userId.eq(userId))
+        SQLExpressions.select(CouponRedemptionEntity.ENTITY.couponId).from(CouponRedemptionEntity.ENTITY)
+            .where(CouponRedemptionEntity.ENTITY.userId.eq(userId))
     )
 }

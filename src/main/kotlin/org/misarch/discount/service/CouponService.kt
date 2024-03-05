@@ -8,9 +8,9 @@ import org.misarch.discount.graphql.input.CreateCouponInput
 import org.misarch.discount.graphql.input.RegisterCouponInput
 import org.misarch.discount.graphql.input.UpdateCouponInput
 import org.misarch.discount.persistence.model.CouponEntity
-import org.misarch.discount.persistence.model.CouponToUserEntity
+import org.misarch.discount.persistence.model.CouponRedemptionEntity
 import org.misarch.discount.persistence.repository.CouponRepository
-import org.misarch.discount.persistence.repository.CouponToUserRepository
+import org.misarch.discount.persistence.repository.CouponRedemptionRepository
 import org.misarch.discount.persistence.repository.DiscountRepository
 import org.springframework.stereotype.Service
 import java.time.OffsetDateTime
@@ -20,14 +20,14 @@ import java.time.OffsetDateTime
  *
  * @param repository the provided repository
  * @param discountRepository the discount repository
- * @param couponToUserRepository the coupon to user repository
+ * @param couponRedemptionRepository the coupon redemption repository
  * @param eventPublisher the event publisher
  */
 @Service
 class CouponService(
     repository: CouponRepository,
     private val discountRepository: DiscountRepository,
-    private val couponToUserRepository: CouponToUserRepository,
+    private val couponRedemptionRepository: CouponRedemptionRepository,
     private val eventPublisher: EventPublisher
 ) : BaseService<CouponEntity, CouponRepository>(repository) {
 
@@ -94,7 +94,7 @@ class CouponService(
         require(coupon.validFrom.isBefore(now) && coupon.validUntil.isAfter(now)) {
             "Coupon with code ${input.code} is not valid currently"
         }
-        couponToUserRepository.save(CouponToUserEntity(couponId = coupon.id!!, userId = input.userId, id = null))
+        couponRedemptionRepository.save(CouponRedemptionEntity(couponId = coupon.id!!, userId = input.userId, id = null))
             .awaitSingle()
         return repository.findById(coupon.id).awaitSingle()
     }
