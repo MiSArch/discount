@@ -8,6 +8,7 @@ import java.util.UUID
  * @property id OrderItem UUID.
  * @property createdAt Timestamp when OrderItem was created.
  * @property productVariantVersionId UUID of product variant version associated with OrderItem.
+ * @property productVariantId UUID of product variant associated with OrderItem.
  * @property taxRateVersionId UUID of tax rate version associated with OrderItem.
  * @property shoppingCartItemId UUID of shopping cart item associated with OrderItem.
  * @property count Specifies the quantity of the OrderItem.
@@ -19,6 +20,7 @@ data class OrderItemDTO(
     val id: UUID,
     val createdAt: String,
     val productVariantVersionId: UUID,
+    val productVariantId: UUID,
     val taxRateVersionId: UUID,
     val shoppingCartItemId: UUID,
     val count: Long,

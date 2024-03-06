@@ -12,6 +12,8 @@ import java.util.UUID
  * @property placedAt Timestamp of Order placement. Not present until Order is placed.
  * @property rejectionReason The rejection reason if status of the Order is REJECTED.
  * @property orderItems List of OrderItems associated with the Order.
+ * @property shipmentAddressId UUID of shipment address associated with the Order.
+ * @property invoiceAddressId UUID of invoice address associated with the Order.
  */
 data class OrderDTO(
     val id: UUID,
@@ -20,5 +22,7 @@ data class OrderDTO(
     val orderStatus: OrderStatus,
     val placedAt: String?,
     val rejectionReason: RejectionReason,
-    val orderItems: List<OrderItemDTO>
+    val orderItems: List<OrderItemDTO>,
+    val shipmentAddressId: UUID,
+    val invoiceAddressId: UUID
 )
