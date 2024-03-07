@@ -69,6 +69,12 @@ class CouponConnection(
 enum class CouponOrderField(override vararg val expressions: Expression<out Comparable<*>>) : BaseOrderField {
     @GraphQLDescription("Order coupons by their id")
     ID(CouponEntity.ENTITY.id),
+
+    @GraphQLDescription("Order coupons by the valid from date")
+    VALID_FROM(CouponEntity.ENTITY.validFrom, CouponEntity.ENTITY.id),
+
+    @GraphQLDescription("Order coupons by the valid until date")
+    VALID_UNTIL(CouponEntity.ENTITY.validUntil, CouponEntity.ENTITY.id),
 }
 
 @GraphQLDescription("Coupon order")

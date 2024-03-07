@@ -53,6 +53,12 @@ class DiscountConnection(
 enum class DiscountOrderField(override vararg val expressions: Expression<out Comparable<*>>) : BaseOrderField {
     @GraphQLDescription("Order discounts by their id")
     ID(DiscountEntity.ENTITY.id),
+
+    @GraphQLDescription("Order discounts by the valid from date")
+    VALID_FROM(DiscountEntity.ENTITY.validFrom, DiscountEntity.ENTITY.id),
+
+    @GraphQLDescription("Order discounts by the valid until date")
+    VALID_UNTIL(DiscountEntity.ENTITY.validUntil, DiscountEntity.ENTITY.id),
 }
 
 @GraphQLDescription("Discount order")
