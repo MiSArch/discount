@@ -100,14 +100,10 @@ class DiscountService(
         }
         updateDiscountReferencedEntities(discountInput)
         val updatedDiscount = repository.save(discount).awaitSingle()
-        eventPublisher.publishEvent(
-            DiscountEvents.DISCOUNT_UPDATED, updatedDiscount.toEventDTO(
-                discountToCategoryRepository.findByDiscountId(discountInput.id).map { it.categoryId }.toSet(),
-                discountToProductRepository.findByDiscountId(discountInput.id).map { it.productId }.toSet(),
-                discountToProductVariantRepository.findByDiscountId(discountInput.id).map { it.productVariantId }
-                    .toSet()
-            )
-        )
+        eventPublisher.publishEvent(DiscountEvents.DISCOUNT_UPDATED, updatedDiscount.toEventDTO(
+            discountToCategoryRepository.findByDiscountId(discountInput.id).map { it.categoryId }.toSet(),
+            discountToProductRepository.findByDiscountId(discountInput.id).map { it.productId }.toSet(),
+            discountToProductVariantRepository.findByDiscountId(discountInput.id).map { it.productVariantId }.toSet()))
         return updatedDiscount
     }
 
@@ -285,24 +281,47 @@ class DiscountService(
     private fun generateApplicableCouponsFilterCondition(input: FindApplicableDiscountsInput): BooleanExpression? {
         val appliesCondition = generateDiscountAppliesCondition(input.productVariantId)
         val noCouponsCondition = generateNoCouponsCondition()
-        val couponsCondition = DiscountEntity.ENTITY.id.`in`(
-            SQLExpressions.select(CouponEntity.ENTITY.discountId).from(CouponEntity.ENTITY)
-                .join(CouponRedemptionEntity.ENTITY).on(CouponRedemptionEntity.ENTITY.couponId.eq(CouponEntity.ENTITY.id))
-                .where(
-                    CouponEntity.ENTITY.id.`in`(input.couponIds).and(CouponRedemptionEntity.ENTITY.userId.eq(input.userId))
-                )
-        )
-        val usagesCondition = DiscountEntity.ENTITY.maxUsagesPerUser.isNull.or(
+        val couponsCondition = generateUserHasCouponCondition(input)
+        val usagesCondition = generateUsagesNotExceededCondition(input)
+        val currentlyValidCondition = generateIsCurrentlyValidCondition()
+        val condition = appliesCondition.and(usagesCondition).and(noCouponsCondition.or(couponsCondition))
+            .and(currentlyValidCondition)
+        return condition
+    }
+
+    /**
+     * Generates a condition which filters for discounts where the count provided in [input] does not exceed
+     * the max usages remaining for the user defined in [input]
+     *
+     * @param input defines the user and the count
+     * @return The condition
+     */
+    private fun generateUsagesNotExceededCondition(input: FindApplicableDiscountsInput): BooleanExpression {
+        return DiscountEntity.ENTITY.maxUsagesPerUser.isNull.or(
             DiscountEntity.ENTITY.maxUsagesPerUser.goe(
                 Coalesce(
                     DiscountUsageEntity.ENTITY.usages.add(input.count), Expressions.constant(input.count)
                 )
             )
         )
-        val currentlyValidCondition = generateIsCurrentlyValidCondition()
-        val condition = appliesCondition.and(usagesCondition).and(noCouponsCondition.or(couponsCondition))
-            .and(currentlyValidCondition)
-        return condition
+    }
+
+    /**
+     * Generates a condition that filters for discounts where any of the coupons in [input] are required
+     * and the user has the coupon.
+     *
+     * @param input defines the user and coupons to check
+     * @return The condition
+     */
+    private fun generateUserHasCouponCondition(input: FindApplicableDiscountsInput): BooleanExpression {
+        return DiscountEntity.ENTITY.id.`in`(
+            SQLExpressions.select(CouponEntity.ENTITY.discountId).from(CouponEntity.ENTITY)
+                .join(CouponRedemptionEntity.ENTITY)
+                .on(CouponRedemptionEntity.ENTITY.couponId.eq(CouponEntity.ENTITY.id)).where(
+                    CouponEntity.ENTITY.id.`in`(input.couponIds)
+                        .and(CouponRedemptionEntity.ENTITY.userId.eq(input.userId))
+                )
+        )
     }
 
     /**
@@ -320,12 +339,12 @@ class DiscountService(
         val couponsCondition = if (authorizedUser == null) {
             hasNoRequiredCouponsCondition
         } else {
+            val filterCondition = CouponEntity.ENTITY.discountId.eq(DiscountEntity.ENTITY.id)
+                .and(CouponRedemptionEntity.ENTITY.userId.eq(authorizedUser.id))
             val userHasCouponCondition =
                 SQLExpressions.select(Expressions.TRUE).from(CouponEntity.ENTITY).join(CouponRedemptionEntity.ENTITY)
-                    .on(CouponEntity.ENTITY.id.eq(CouponRedemptionEntity.ENTITY.couponId)).where(
-                        CouponEntity.ENTITY.discountId.eq(DiscountEntity.ENTITY.id)
-                            .and(CouponRedemptionEntity.ENTITY.userId.eq(authorizedUser.id))
-                    ).exists()
+                    .on(CouponEntity.ENTITY.id.eq(CouponRedemptionEntity.ENTITY.couponId)).where(filterCondition)
+                    .exists()
             hasNoRequiredCouponsCondition.or(userHasCouponCondition)
         }
         val currentlyValidCondition = generateIsCurrentlyValidCondition()
@@ -363,18 +382,49 @@ class DiscountService(
      * @return The condition
      */
     fun generateDiscountAppliesCondition(id: UUID): BooleanExpression {
-        val appliesProductVariantCondition = DiscountEntity.ENTITY.id.`in`(
+        val appliesProductVariantCondition = generateDiscountAppliesToProductVariantCondition(id)
+        val appliesProductCondition = generateDiscountAppliesToProductCondition(id)
+        val appliesCategoryCondition = generateDiscountAppliesToCategoryCondition(id)
+        return appliesProductVariantCondition.or(appliesProductCondition).or(appliesCategoryCondition)
+    }
+
+    /**
+     * Generates a condition that checks that a discount applies to a product variant
+     *
+     * @param id the id of the product variant
+     * @return The condition
+     */
+    private fun generateDiscountAppliesToProductVariantCondition(id: UUID): BooleanExpression {
+        return DiscountEntity.ENTITY.id.`in`(
             SQLExpressions.select(DiscountToProductVariantEntity.ENTITY.discountId)
                 .from(DiscountToProductVariantEntity.ENTITY)
                 .where(DiscountToProductVariantEntity.ENTITY.productVariantId.eq(id))
         )
-        val appliesProductCondition = DiscountEntity.ENTITY.id.`in`(
+    }
+
+    /**
+     * Generates a condition that checks that a discount applies to a product
+     *
+     * @param id the id of the product variant
+     * @return The condition
+     */
+    private fun generateDiscountAppliesToProductCondition(id: UUID): BooleanExpression {
+        return DiscountEntity.ENTITY.id.`in`(
             SQLExpressions.select(DiscountToProductEntity.ENTITY.discountId).from(DiscountToProductEntity.ENTITY)
                 .join(ProductVariantEntity.ENTITY)
                 .on(DiscountToProductEntity.ENTITY.productId.eq(ProductVariantEntity.ENTITY.productId))
                 .where(ProductVariantEntity.ENTITY.id.eq(id))
         )
-        val appliesCategoryCondition = DiscountEntity.ENTITY.id.`in`(
+    }
+
+    /**
+     * Generates a condition that checks that a discount applies to the categories of a product of a product variant
+     *
+     * @param id the id of the product variant
+     * @return The condition
+     */
+    private fun generateDiscountAppliesToCategoryCondition(id: UUID): BooleanExpression {
+        return DiscountEntity.ENTITY.id.`in`(
             SQLExpressions.select(DiscountToCategoryEntity.ENTITY.discountId).from(DiscountToCategoryEntity.ENTITY)
                 .join(ProductToCategoryEntity.ENTITY)
                 .on(DiscountToCategoryEntity.ENTITY.categoryId.eq(ProductToCategoryEntity.ENTITY.categoryId))
@@ -382,7 +432,6 @@ class DiscountService(
                 .on(ProductToCategoryEntity.ENTITY.productId.eq(ProductVariantEntity.ENTITY.productId))
                 .where(ProductVariantEntity.ENTITY.id.eq(id))
         )
-        return appliesProductVariantCondition.or(appliesProductCondition).or(appliesCategoryCondition)
     }
 
 }
