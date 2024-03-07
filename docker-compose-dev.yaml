@@ -1,0 +1,27 @@
+services:
+  discount-db:
+    extends:
+      file: docker-compose-base.yaml
+      service: discount-db
+    ports:
+      - 5432:5432
+  discount:
+    extends:
+      file: docker-compose-base.yaml
+      service: discount
+    ports:
+      - 8080:8080
+  discount-dapr:
+    extends:
+      file: docker-compose-base.yaml
+      service: discount-dapr
+    volumes:
+      - "./.dapr/dapr-config-minimal.yaml:/config.yaml"
+      - "./.dapr/components:/components"
+  placement:
+    image: "daprio/dapr"
+    command: ["./placement", "-port", "50006"]
+    ports:
+      - "50006:50006"
+volumes:
+  discount-db-data:
