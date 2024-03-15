@@ -2,7 +2,6 @@ package org.misarch.discount.service
 
 import com.expediagroup.graphql.generator.execution.OptionalInput
 import com.querydsl.core.types.dsl.BooleanExpression
-import com.querydsl.core.types.dsl.Coalesce
 import com.querydsl.core.types.dsl.Expressions
 import com.querydsl.sql.SQLExpressions
 import kotlinx.coroutines.reactor.awaitSingle
@@ -14,6 +13,7 @@ import org.misarch.discount.event.model.order.OrderDTO
 import org.misarch.discount.graphql.AuthorizedUser
 import org.misarch.discount.graphql.input.CreateDiscountInput
 import org.misarch.discount.graphql.input.FindApplicableDiscountsInput
+import org.misarch.discount.graphql.input.FindApplicableDiscountsProductVariantInput
 import org.misarch.discount.graphql.input.UpdateDiscountInput
 import org.misarch.discount.persistence.model.*
 import org.misarch.discount.persistence.repository.*
@@ -223,10 +223,10 @@ class DiscountService(
         val discounts =
             repository.findAllById(orderItemsByDiscount.keys).collectList().awaitSingle().associateBy { it.id }
         val failedDiscounts = mutableListOf<UUID>()
+        val remainingDiscountUsages = findRemainingUsagesForDiscounts(order.userId, discounts.values.toSet())
         orderItemsByDiscount.forEach { (discount, orderItems) ->
             val totalAmount = orderItems.sumOf { it.count }
-            val currentAmount = discountUsageRepository.findByUserIdAndDiscountId(order.userId, discount)?.usages ?: 0
-            if (currentAmount + totalAmount > (discounts[discount]!!.maxUsagesPerUser?.toLong() ?: Long.MAX_VALUE)) {
+            if (totalAmount > (remainingDiscountUsages[discount] ?: Long.MAX_VALUE)) {
                 failedDiscounts += discount
             }
         }
@@ -241,26 +241,83 @@ class DiscountService(
     }
 
     /**
-     * Finds all discounts that are applicable to a product variant, a user and a list of coupons.
+     * Finds the remaining usages for a user for a set of discounts
+     * Only returns the remaining usages for discounts that have a maximum number of usages per user
+     *
+     * @param userId the id of the user
+     * @param discounts the discounts to find the remaining usages for
+     * @return the remaining usages for each discount that has a maximum number of usages per user
+     */
+    private suspend fun findRemainingUsagesForDiscounts(
+        userId: UUID, discounts: Set<DiscountEntity>
+    ): Map<UUID, Long> {
+        val discountIds = discounts.filter { it.maxUsagesPerUser != null }.map { it.id!! }.toSet()
+        val currentUsagesByDiscount = discountUsageRepository.findByUserIdAndDiscountIdIn(userId, discountIds)
+            .associateBy({ it.discountId }) { it.usages }
+        return discounts.associate {
+            it.id!! to it.maxUsagesPerUser!! - (currentUsagesByDiscount[it.id] ?: 0)
+        }
+    }
+
+    /**
+     * Finds all discounts that are applicable to a user, and a list of product variant and a list of coupons.
      * Also checks if the user can use the discounts with the amount of items.
      *
      * @param input the input for the query
-     * @return The applicable discounts
+     * @return The applicable discounts for each product variant in order
      * @throws IllegalArgumentException if any of the coupons are not applicable, or multiple coupons are used for the same discount
      */
     suspend fun findApplicableDiscounts(
         input: FindApplicableDiscountsInput
+    ): List<List<DiscountEntity>> {
+        val productVariantInputsWithDiscounts = input.productVariants.map { productVariantInput ->
+            val condition = generateApplicableCouponsFilterCondition(productVariantInput, input.userId)
+            val discounts = repository.query {
+                it.select(repository.entityProjection()).from(DiscountEntity.ENTITY)
+                    .leftJoin(DiscountUsageEntity.ENTITY).on(
+                        DiscountEntity.ENTITY.id.eq(DiscountUsageEntity.ENTITY.discountId)
+                            .and(DiscountUsageEntity.ENTITY.userId.eq(input.userId))
+                    ).where(condition)
+            }.all().collectList().awaitSingle()
+            Pair(productVariantInput, discounts)
+        }
+        val discounts = productVariantInputsWithDiscounts.flatMap { it.second }.toSet()
+        val remainingUsages = findRemainingUsagesForDiscounts(input.userId, discounts).toMutableMap()
+        val couponIds = input.productVariants.flatMap { it.couponIds }.toSet()
+        val couponsById = couponRepository.findAllById(couponIds).collectList().awaitSingle().associateBy { it.id }
+        require(couponIds.all { it in couponsById }) {
+            "Coupon(s) with id(s) ${couponIds.filter { it !in couponsById }} do(es) not exist"
+        }
+        return productVariantInputsWithDiscounts.map { (productVariantInput, discounts) ->
+            filterApplicableDiscounts(discounts, remainingUsages, productVariantInput, couponsById)
+        }
+    }
+
+    /**
+     * Returns the [discounts] which can be used with [productVariantInput].
+     * Ensures that all coupons are applicable and refer to different discounts.
+     * Ensures that the user can use the discount with the amount of items, and updates [remainingUsages] accordingly.
+     *
+     * @param discounts the discounts to filter
+     * @param remainingUsages the remaining usages for each discount
+     * @param productVariantInput the input for the query
+     * @param couponsById the coupons by id
+     * @return The applicable discounts
+     */
+    private fun filterApplicableDiscounts(
+        discounts: MutableList<DiscountEntity>,
+        remainingUsages: MutableMap<UUID, Long>,
+        productVariantInput: FindApplicableDiscountsProductVariantInput,
+        couponsById: Map<UUID?, CouponEntity>
     ): List<DiscountEntity> {
-        val condition = generateApplicableCouponsFilterCondition(input)
-        val discounts = repository.query {
-            it.select(repository.entityProjection()).from(DiscountEntity.ENTITY).leftJoin(DiscountUsageEntity.ENTITY)
-                .on(
-                    DiscountEntity.ENTITY.id.eq(DiscountUsageEntity.ENTITY.discountId)
-                        .and(DiscountUsageEntity.ENTITY.userId.eq(input.userId))
-                ).where(condition)
-        }.all().collectList().awaitSingle()
-        val discountsById = discounts.associateBy { it.id }
-        val coupons = couponRepository.findAllById(input.couponIds).collectList().awaitSingle()
+        val usableDiscounts = discounts.filter { discount ->
+            remainingUsages[discount.id]?.let { it >= productVariantInput.count } ?: true
+        }
+        usableDiscounts.forEach { discount ->
+            remainingUsages[discount.id!!] = remainingUsages[discount.id]!! - productVariantInput.count
+        }
+        val coupons = productVariantInput.couponIds.map { couponsById.getValue(it) }
+        val discountsById = usableDiscounts.associateBy { it.id }
         coupons.forEach {
             require(it.discountId in discountsById) {
                 "Coupon with id ${it.id} could not be used, either due to insufficient remaining usages, the user not owning the coupon, or the coupon not being applicable"
@@ -269,41 +326,25 @@ class DiscountService(
         coupons.groupBy({ it.discountId }) { it.id }.filter { it.value.size > 1 }.forEach { (discountId, couponsIds) ->
             error("Coupons with ids $couponsIds are used multiple times for the same discount $discountId")
         }
-        return discounts
+        return usableDiscounts
     }
 
     /**
      * Generates a condition that checks that a discount is applicable to a product variant, a user and a list of coupons.
      *
      * @param input the input for the query
+     * @param userId the id of the user for which to check the coupons
      * @return The condition
      */
-    private fun generateApplicableCouponsFilterCondition(input: FindApplicableDiscountsInput): BooleanExpression? {
+    private fun generateApplicableCouponsFilterCondition(
+        input: FindApplicableDiscountsProductVariantInput, userId: UUID
+    ): BooleanExpression? {
         val appliesCondition = generateDiscountAppliesCondition(input.productVariantId)
         val noCouponsCondition = generateNoCouponsCondition()
-        val couponsCondition = generateUserHasCouponCondition(input)
-        val usagesCondition = generateUsagesNotExceededCondition(input)
+        val couponsCondition = generateUserHasCouponCondition(input, userId)
         val currentlyValidCondition = generateIsCurrentlyValidCondition()
-        val condition = appliesCondition.and(usagesCondition).and(noCouponsCondition.or(couponsCondition))
-            .and(currentlyValidCondition)
+        val condition = appliesCondition.and(noCouponsCondition.or(couponsCondition)).and(currentlyValidCondition)
         return condition
-    }
-
-    /**
-     * Generates a condition which filters for discounts where the count provided in [input] does not exceed
-     * the max usages remaining for the user defined in [input]
-     *
-     * @param input defines the user and the count
-     * @return The condition
-     */
-    private fun generateUsagesNotExceededCondition(input: FindApplicableDiscountsInput): BooleanExpression {
-        return DiscountEntity.ENTITY.maxUsagesPerUser.isNull.or(
-            DiscountEntity.ENTITY.maxUsagesPerUser.goe(
-                Coalesce(
-                    DiscountUsageEntity.ENTITY.usages.add(input.count), Expressions.constant(input.count)
-                )
-            )
-        )
     }
 
     /**
@@ -311,15 +352,17 @@ class DiscountService(
      * and the user has the coupon.
      *
      * @param input defines the user and coupons to check
+     * @param userId the id of the user for which to check the coupons
      * @return The condition
      */
-    private fun generateUserHasCouponCondition(input: FindApplicableDiscountsInput): BooleanExpression {
+    private fun generateUserHasCouponCondition(
+        input: FindApplicableDiscountsProductVariantInput, userId: UUID
+    ): BooleanExpression {
         return DiscountEntity.ENTITY.id.`in`(
             SQLExpressions.select(CouponEntity.ENTITY.discountId).from(CouponEntity.ENTITY)
                 .join(CouponRedemptionEntity.ENTITY)
                 .on(CouponRedemptionEntity.ENTITY.couponId.eq(CouponEntity.ENTITY.id)).where(
-                    CouponEntity.ENTITY.id.`in`(input.couponIds)
-                        .and(CouponRedemptionEntity.ENTITY.userId.eq(input.userId))
+                    CouponEntity.ENTITY.id.`in`(input.couponIds).and(CouponRedemptionEntity.ENTITY.userId.eq(userId))
                 )
         )
     }

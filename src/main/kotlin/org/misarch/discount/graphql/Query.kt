@@ -50,13 +50,13 @@ class Query(
         return dfe.getDataLoader<UUID, Coupon>(CouponDataLoader::class.simpleName!!).load(id)
     }
 
-    @GraphQLDescription("Find all applicable discounts for a product variant and user, and list of coupon ids.")
+    @GraphQLDescription("Find all applicable discounts for user and a list of product variant, count and coupon id triples")
     @InaccessibleDirective
     suspend fun findApplicableDiscounts(
         @GraphQLDescription("The input for the findApplicableDiscounts query.")
         input: FindApplicableDiscountsInput
-    ): List<Discount> {
-        return discountService.findApplicableDiscounts(input).map { it.toDTO() }
+    ): List<List<Discount>> {
+        return discountService.findApplicableDiscounts(input).map { discounts -> discounts.map { it.toDTO() } }
     }
 
 }

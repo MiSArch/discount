@@ -32,12 +32,12 @@ interface DiscountUsageRepository : QuerydslR2dbcRepository<DiscountUsageEntity,
     suspend fun upsertDiscountUsage(discountId: UUID, userId: UUID, usages: Long)
 
     /**
-     * Find a discount usage by user id and discount id
+     * Find discount usages by user id and  a collection of discount ids
      *
      * @param userId id of the user
-     * @param discountId id of the discount
+     * @param discountIds ids of the discounts
      * @return the discount usage, null if not found
      */
-    suspend fun findByUserIdAndDiscountId(userId: UUID, discountId: UUID): DiscountUsageEntity?
+    suspend fun findByUserIdAndDiscountIdIn(userId: UUID, discountIds: Collection<UUID>): List<DiscountUsageEntity>
 
 }
