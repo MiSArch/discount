@@ -270,6 +270,7 @@ class DiscountService(
     suspend fun findApplicableDiscounts(
         input: FindApplicableDiscountsInput
     ): List<List<DiscountEntity>> {
+        verifyProductVariants(input)
         val productVariantInputsWithDiscounts = input.productVariants.map { productVariantInput ->
             val condition = generateApplicableCouponsFilterCondition(productVariantInput, input.userId)
             val discounts = repository.query {
@@ -290,6 +291,21 @@ class DiscountService(
         }
         return productVariantInputsWithDiscounts.map { (productVariantInput, discounts) ->
             filterApplicableDiscounts(discounts, remainingUsages, productVariantInput, couponsById)
+        }
+    }
+
+    /**
+     * Verifies that the product variants in [input] exist
+     *
+     * @param input the input for the query
+     * @throws IllegalArgumentException if any of the product variants do not exist
+     */
+    private suspend fun verifyProductVariants(input: FindApplicableDiscountsInput) {
+        val productVariantIds = input.productVariants.map { it.productVariantId }.toSet()
+        val productVariantsById =
+            productVariantRepository.findAllById(productVariantIds).collectList().awaitSingle().associateBy { it.id }
+        require(productVariantIds.all { it in productVariantsById }) {
+            "Product variant(s) with id(s) ${productVariantIds.filter { it !in productVariantsById }} do(es) not exist"
         }
     }
 
