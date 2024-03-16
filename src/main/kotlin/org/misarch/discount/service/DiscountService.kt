@@ -273,14 +273,7 @@ class DiscountService(
     ): List<DiscountsForProductVariant> {
         verifyProductVariants(input)
         val productVariantInputsWithDiscounts = input.productVariants.map { productVariantInput ->
-            val condition = generateApplicableCouponsFilterCondition(productVariantInput, input.userId)
-            val discounts = repository.query {
-                it.select(repository.entityProjection()).from(DiscountEntity.ENTITY)
-                    .leftJoin(DiscountUsageEntity.ENTITY).on(
-                        DiscountEntity.ENTITY.id.eq(DiscountUsageEntity.ENTITY.discountId)
-                            .and(DiscountUsageEntity.ENTITY.userId.eq(input.userId))
-                    ).where(condition)
-            }.all().collectList().awaitSingle()
+            val discounts = findApplicableDiscountsForProductVariant(productVariantInput, input.userId)
             Pair(productVariantInput, discounts)
         }
         val discounts = productVariantInputsWithDiscounts.flatMap { it.second }.toSet()
@@ -293,6 +286,29 @@ class DiscountService(
         return productVariantInputsWithDiscounts.map { (productVariantInput, discounts) ->
             filterApplicableDiscounts(discounts, remainingUsages, productVariantInput, couponsById)
         }
+    }
+
+    /**
+     * Finds all discounts that are applicable to a user, and a product variant and a list of coupons.
+     * Does NOT check if the user can use the discounts with the amount of items.
+     *
+     * @param productVariantInput defines the product variant, the count, and the coupons to check
+     * @param userId the id of the user for which to check the coupons
+     * @return The applicable discounts for the product variant, count and user
+     */
+    private suspend fun findApplicableDiscountsForProductVariant(
+        productVariantInput: FindApplicableDiscountsProductVariantInput,
+        userId: UUID
+    ): MutableList<DiscountEntity> {
+        val condition = generateApplicableDiscountsFilterCondition(productVariantInput, userId)
+        val discounts = repository.query {
+            it.select(repository.entityProjection()).from(DiscountEntity.ENTITY)
+                .leftJoin(DiscountUsageEntity.ENTITY).on(
+                    DiscountEntity.ENTITY.id.eq(DiscountUsageEntity.ENTITY.discountId)
+                        .and(DiscountUsageEntity.ENTITY.userId.eq(userId))
+                ).where(condition)
+        }.all().collectList().awaitSingle()
+        return discounts
     }
 
     /**
@@ -355,7 +371,7 @@ class DiscountService(
      * @param userId the id of the user for which to check the coupons
      * @return The condition
      */
-    private fun generateApplicableCouponsFilterCondition(
+    private fun generateApplicableDiscountsFilterCondition(
         input: FindApplicableDiscountsProductVariantInput, userId: UUID
     ): BooleanExpression? {
         val appliesCondition = generateDiscountAppliesCondition(input.productVariantId)
