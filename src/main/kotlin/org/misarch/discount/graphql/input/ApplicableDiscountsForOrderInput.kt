@@ -10,7 +10,9 @@ class FindApplicableDiscountsInput(
     @property:GraphQLDescription("The user id for which discounts should be computed.")
     val userId: UUID,
     @property:GraphQLDescription("The list of product variants for which discounts should be computed.")
-    val productVariants: List<FindApplicableDiscountsProductVariantInput>
+    val productVariants: List<FindApplicableDiscountsProductVariantInput>,
+    @property:GraphQLDescription("The order amount, used to filter applicable discounts.")
+    val orderAmount: Int
 )
 
 @GraphQLDescription("Triple of a product variant id, a count, and a list of coupon ids for which discounts should be computed")

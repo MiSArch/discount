@@ -101,10 +101,14 @@ class DiscountService(
         }
         updateDiscountReferencedEntities(discountInput)
         val updatedDiscount = repository.save(discount).awaitSingle()
-        eventPublisher.publishEvent(DiscountEvents.DISCOUNT_UPDATED, updatedDiscount.toEventDTO(
-            discountToCategoryRepository.findByDiscountId(discountInput.id).map { it.categoryId }.toSet(),
-            discountToProductRepository.findByDiscountId(discountInput.id).map { it.productId }.toSet(),
-            discountToProductVariantRepository.findByDiscountId(discountInput.id).map { it.productVariantId }.toSet()))
+        eventPublisher.publishEvent(
+            DiscountEvents.DISCOUNT_UPDATED, updatedDiscount.toEventDTO(
+                discountToCategoryRepository.findByDiscountId(discountInput.id).map { it.categoryId }.toSet(),
+                discountToProductRepository.findByDiscountId(discountInput.id).map { it.productId }.toSet(),
+                discountToProductVariantRepository.findByDiscountId(discountInput.id).map { it.productVariantId }
+                    .toSet()
+            )
+        )
         return updatedDiscount
     }
 
@@ -273,7 +277,7 @@ class DiscountService(
     ): List<DiscountsForProductVariant> {
         verifyProductVariants(input)
         val productVariantInputsWithDiscounts = input.productVariants.map { productVariantInput ->
-            val discounts = findApplicableDiscountsForProductVariant(productVariantInput, input.userId)
+            val discounts = findApplicableDiscountsForProductVariant(productVariantInput, input)
             Pair(productVariantInput, discounts)
         }
         val discounts = productVariantInputsWithDiscounts.flatMap { it.second }.toSet()
@@ -293,19 +297,19 @@ class DiscountService(
      * Does NOT check if the user can use the discounts with the amount of items.
      *
      * @param productVariantInput defines the product variant, the count, and the coupons to check
-     * @param userId the id of the user for which to check the coupons
+     * @param input defines the id of the user for which to check the coupons and the order amount
      * @return The applicable discounts for the product variant, count and user
      */
     private suspend fun findApplicableDiscountsForProductVariant(
         productVariantInput: FindApplicableDiscountsProductVariantInput,
-        userId: UUID
+        input: FindApplicableDiscountsInput
     ): MutableList<DiscountEntity> {
-        val condition = generateApplicableDiscountsFilterCondition(productVariantInput, userId)
+        val condition = generateApplicableDiscountsFilterCondition(productVariantInput, input)
         val discounts = repository.query {
             it.select(repository.entityProjection()).from(DiscountEntity.ENTITY)
                 .leftJoin(DiscountUsageEntity.ENTITY).on(
                     DiscountEntity.ENTITY.id.eq(DiscountUsageEntity.ENTITY.discountId)
-                        .and(DiscountUsageEntity.ENTITY.userId.eq(userId))
+                        .and(DiscountUsageEntity.ENTITY.userId.eq(input.userId))
                 ).where(condition)
         }.all().collectList().awaitSingle()
         return discounts
@@ -367,19 +371,34 @@ class DiscountService(
     /**
      * Generates a condition that checks that a discount is applicable to a product variant, a user and a list of coupons.
      *
-     * @param input the input for the query
-     * @param userId the id of the user for which to check the coupons
+     * @param productVariantInput defines the product variant, count and coupons to check
+     * @param input defines the user id and the order amount to check
      * @return The condition
      */
     private fun generateApplicableDiscountsFilterCondition(
-        input: FindApplicableDiscountsProductVariantInput, userId: UUID
+        productVariantInput: FindApplicableDiscountsProductVariantInput, input: FindApplicableDiscountsInput
     ): BooleanExpression? {
-        val appliesCondition = generateDiscountAppliesCondition(input.productVariantId)
+        val appliesCondition = generateDiscountAppliesCondition(productVariantInput.productVariantId)
         val noCouponsCondition = generateNoCouponsCondition()
-        val couponsCondition = generateUserHasCouponCondition(input, userId)
+        val couponsCondition = generateUserHasCouponCondition(productVariantInput, input.userId)
         val currentlyValidCondition = generateIsCurrentlyValidCondition()
+        val minOrderAmountCondition = generateMinOrderAmountCondition(input.orderAmount)
         val condition = appliesCondition.and(noCouponsCondition.or(couponsCondition)).and(currentlyValidCondition)
+            .and(minOrderAmountCondition)
         return condition
+    }
+
+    /**
+     * Generates a condition that checks that a discount either does not require a min order amount,
+     * or the order amount is less than or equal to the provided [amount]
+     *
+     * @param amount the order amount
+     * @return The condition
+     */
+    private fun generateMinOrderAmountCondition(amount: Int): BooleanExpression? {
+        return DiscountEntity.ENTITY.minOrderAmount.isNull.or(
+            DiscountEntity.ENTITY.minOrderAmount.loe(amount)
+        )
     }
 
     /**
