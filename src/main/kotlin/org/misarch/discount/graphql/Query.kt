@@ -51,7 +51,7 @@ class Query(
         return dfe.getDataLoader<UUID, Coupon>(CouponDataLoader::class.simpleName!!).load(id)
     }
 
-    @GraphQLDescription("Find all applicable discounts for user and a list of product variant, count and coupon id triples")
+    @GraphQLDescription("Find all applicable discounts for a user and a list of product variant, count and coupon id triples")
     @InaccessibleDirective
     suspend fun findApplicableDiscounts(
         @GraphQLDescription("The input for the findApplicableDiscounts query.")
