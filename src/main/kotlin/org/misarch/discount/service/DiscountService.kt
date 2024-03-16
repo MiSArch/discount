@@ -302,7 +302,7 @@ class DiscountService(
     private suspend fun findApplicableDiscountsForProductVariant(
         productVariantInput: FindApplicableDiscountsProductVariantInput,
         input: FindApplicableDiscountsInput
-    ): MutableList<DiscountEntity> {
+    ): List<DiscountEntity> {
         val condition = generateApplicableDiscountsFilterCondition(productVariantInput, input)
         val discounts = repository.query {
             it.select(repository.entityProjection()).from(DiscountEntity.ENTITY)
@@ -341,7 +341,7 @@ class DiscountService(
      * @return The applicable discounts with the associated product variant and count
      */
     private fun filterApplicableDiscounts(
-        discounts: MutableList<DiscountEntity>,
+        discounts: List<DiscountEntity>,
         remainingUsages: MutableMap<UUID, Long>,
         productVariantInput: FindApplicableDiscountsProductVariantInput,
         couponsById: Map<UUID?, CouponEntity>
