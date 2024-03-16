@@ -9,6 +9,7 @@ import org.misarch.discount.graphql.dataloader.DiscountDataLoader
 import org.misarch.discount.graphql.input.FindApplicableDiscountsInput
 import org.misarch.discount.graphql.model.Coupon
 import org.misarch.discount.graphql.model.Discount
+import org.misarch.discount.graphql.model.DiscountsForProductVariant
 import org.misarch.discount.persistence.repository.CouponRepository
 import org.misarch.discount.persistence.repository.DiscountRepository
 import org.misarch.discount.service.DiscountService
@@ -50,13 +51,13 @@ class Query(
         return dfe.getDataLoader<UUID, Coupon>(CouponDataLoader::class.simpleName!!).load(id)
     }
 
-    @GraphQLDescription("Find all applicable discounts for a product variant and user, and list of coupon ids.")
+    @GraphQLDescription("Find all applicable discounts for a user and a list of product variant, count and coupon id triples")
     @InaccessibleDirective
     suspend fun findApplicableDiscounts(
         @GraphQLDescription("The input for the findApplicableDiscounts query.")
         input: FindApplicableDiscountsInput
-    ): List<Discount> {
-        return discountService.findApplicableDiscounts(input).map { it.toDTO() }
+    ): List<DiscountsForProductVariant> {
+        return discountService.findApplicableDiscounts(input)
     }
 
 }
