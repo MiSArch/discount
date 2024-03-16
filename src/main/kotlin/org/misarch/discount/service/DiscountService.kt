@@ -105,8 +105,7 @@ class DiscountService(
             DiscountEvents.DISCOUNT_UPDATED, updatedDiscount.toEventDTO(
                 discountToCategoryRepository.findByDiscountId(discountInput.id).map { it.categoryId }.toSet(),
                 discountToProductRepository.findByDiscountId(discountInput.id).map { it.productId }.toSet(),
-                discountToProductVariantRepository.findByDiscountId(discountInput.id).map { it.productVariantId }
-                    .toSet()
+                discountToProductVariantRepository.findByDiscountId(discountInput.id).map { it.productVariantId }.toSet()
             )
         )
         return updatedDiscount
