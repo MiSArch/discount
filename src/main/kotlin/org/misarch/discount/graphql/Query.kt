@@ -9,6 +9,7 @@ import org.misarch.discount.graphql.dataloader.DiscountDataLoader
 import org.misarch.discount.graphql.input.FindApplicableDiscountsInput
 import org.misarch.discount.graphql.model.Coupon
 import org.misarch.discount.graphql.model.Discount
+import org.misarch.discount.graphql.model.DiscountsForProductVariant
 import org.misarch.discount.persistence.repository.CouponRepository
 import org.misarch.discount.persistence.repository.DiscountRepository
 import org.misarch.discount.service.DiscountService
@@ -55,8 +56,8 @@ class Query(
     suspend fun findApplicableDiscounts(
         @GraphQLDescription("The input for the findApplicableDiscounts query.")
         input: FindApplicableDiscountsInput
-    ): List<List<Discount>> {
-        return discountService.findApplicableDiscounts(input).map { discounts -> discounts.map { it.toDTO() } }
+    ): List<DiscountsForProductVariant> {
+        return discountService.findApplicableDiscounts(input)
     }
 
 }

@@ -15,6 +15,7 @@ import org.misarch.discount.graphql.input.CreateDiscountInput
 import org.misarch.discount.graphql.input.FindApplicableDiscountsInput
 import org.misarch.discount.graphql.input.FindApplicableDiscountsProductVariantInput
 import org.misarch.discount.graphql.input.UpdateDiscountInput
+import org.misarch.discount.graphql.model.DiscountsForProductVariant
 import org.misarch.discount.persistence.model.*
 import org.misarch.discount.persistence.repository.*
 import org.springframework.stereotype.Service
@@ -269,7 +270,7 @@ class DiscountService(
      */
     suspend fun findApplicableDiscounts(
         input: FindApplicableDiscountsInput
-    ): List<List<DiscountEntity>> {
+    ): List<DiscountsForProductVariant> {
         verifyProductVariants(input)
         val productVariantInputsWithDiscounts = input.productVariants.map { productVariantInput ->
             val condition = generateApplicableCouponsFilterCondition(productVariantInput, input.userId)
@@ -318,14 +319,14 @@ class DiscountService(
      * @param remainingUsages the remaining usages for each discount
      * @param productVariantInput the input for the query
      * @param couponsById the coupons by id
-     * @return The applicable discounts
+     * @return The applicable discounts with the associated product variant and count
      */
     private fun filterApplicableDiscounts(
         discounts: MutableList<DiscountEntity>,
         remainingUsages: MutableMap<UUID, Long>,
         productVariantInput: FindApplicableDiscountsProductVariantInput,
         couponsById: Map<UUID?, CouponEntity>
-    ): List<DiscountEntity> {
+    ): DiscountsForProductVariant {
         val usableDiscounts = discounts.filter { discount ->
             remainingUsages[discount.id]?.let { it >= productVariantInput.count } ?: true
         }
@@ -342,7 +343,9 @@ class DiscountService(
         coupons.groupBy({ it.discountId }) { it.id }.filter { it.value.size > 1 }.forEach { (discountId, couponsIds) ->
             error("Coupons with ids $couponsIds are used multiple times for the same discount $discountId")
         }
-        return usableDiscounts
+        return DiscountsForProductVariant(
+            productVariantInput.productVariantId, productVariantInput.count, usableDiscounts.map { it.toDTO() }
+        )
     }
 
     /**
