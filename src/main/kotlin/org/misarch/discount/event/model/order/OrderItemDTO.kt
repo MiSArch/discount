@@ -13,7 +13,7 @@ import java.util.UUID
  * @property shoppingCartItemId UUID of shopping cart item associated with OrderItem.
  * @property count Specifies the quantity of the OrderItem.
  * @property compensatableAmount Total cost of product item, which can also be refunded.
- * @property shipment DTO of shipment of order item.
+ * @property shipmentMethodId UUID of shipment method of order item.
  * @property discountIds List of UUIDs of discounts applied to the order item.
  */
 data class OrderItemDTO(
@@ -25,6 +25,6 @@ data class OrderItemDTO(
     val shoppingCartItemId: UUID,
     val count: Long,
     val compensatableAmount: Long,
-    val shipment: ShipmentDTO,
+    val shipmentMethodId: UUID,
     val discountIds: List<UUID>
 )
