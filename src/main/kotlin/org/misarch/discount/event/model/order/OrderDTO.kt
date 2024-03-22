@@ -14,6 +14,8 @@ import java.util.UUID
  * @property orderItems List of OrderItems associated with the Order.
  * @property shipmentAddressId UUID of shipment address associated with the Order.
  * @property invoiceAddressId UUID of invoice address associated with the Order.
+ * @property compensatableOrderAmount Total compensatable amount of order.
+ * @property paymentInformationId UUID of payment information that the order should be processed with.
  */
 data class OrderDTO(
     val id: UUID,
@@ -21,8 +23,10 @@ data class OrderDTO(
     val createdAt: String,
     val orderStatus: OrderStatus,
     val placedAt: String?,
-    val rejectionReason: RejectionReason,
+    val rejectionReason: RejectionReason?,
     val orderItems: List<OrderItemDTO>,
     val shipmentAddressId: UUID,
-    val invoiceAddressId: UUID
+    val invoiceAddressId: UUID,
+    val compensatableOrderAmount: Long,
+    val paymentInformationId: UUID
 )
