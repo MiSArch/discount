@@ -31,8 +31,8 @@ jobs:
           ./scripts/generate-graphql-schema.sh
       - uses: misarch/graphql-schema-transform@v1
         with:
-          schema: schemas/catalog.graphql
-          target: schemas/catalog.graphql
+          schema: schemas/discount.graphql
+          target: schemas/discount.graphql
       - uses: peter-evans/create-pull-request@v6
         with:
           path: ./schemas
