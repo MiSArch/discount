@@ -21,9 +21,10 @@ services:
     environment:
       - SPRING_R2DBC_URL=r2dbc:postgresql://discount-db:5432/discount
       - SPRING_FLYWAY_URL=jdbc:postgresql://discount-db:5432/discount
-      - SPRING_PROFILES_ACTIVE=dev
+      - SPRING_R2DBC_USERNAME=postgres
+      - SPRING_R2DBC_PASSWORD=postgres
     healthcheck:
-      test: wget http://localhost:8080/graphiql || exit 1
+      test: wget -qO - http://localhost:8080/health || exit 1
       interval: 1s
       timeout: 10s
       retries: 20
