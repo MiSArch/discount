@@ -18,7 +18,7 @@ jobs:
           distribution: temurin
           java-version: 17
       - name: Setup Gradle
-        uses: gradle/gradle-build-action@v2
+        uses: gradle/actions/setup-gradle@v3
       - uses: actions/checkout@v4
         with:
           repository: "misarch/schemas"
@@ -29,7 +29,11 @@ jobs:
         run: |
           chmod +x ./scripts/generate-graphql-schema.sh
           ./scripts/generate-graphql-schema.sh
-      - uses: peter-evans/create-pull-request@v5
+      - uses: misarch/graphql-schema-transform@v1
+        with:
+          schema: schemas/catalog.graphql
+          target: schemas/catalog.graphql
+      - uses: peter-evans/create-pull-request@v6
         with:
           path: ./schemas
           commit-message: Update discount schema

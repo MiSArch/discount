@@ -1,12 +1,12 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-	id("org.springframework.boot") version "3.2.0"
+	id("org.springframework.boot") version "3.2.4"
 	id("io.spring.dependency-management") version "1.1.4"
 	id("com.expediagroup.graphql") version "7.0.2"
-	kotlin("jvm") version "1.9.20"
-	kotlin("plugin.spring") version "1.9.20"
-	kotlin("kapt") version "1.9.20"
+	kotlin("jvm") version "1.9.23"
+	kotlin("plugin.spring") version "1.9.23"
+	kotlin("kapt") version "1.9.23"
 }
 
 group = "org.misarch"
@@ -23,6 +23,7 @@ repositories {
 dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-data-r2dbc")
 	implementation("org.springframework.boot:spring-boot-starter-webflux")
+	implementation("org.springframework.boot:spring-boot-starter-actuator")
 	implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
 	implementation("io.projectreactor.kotlin:reactor-kotlin-extensions")
 	implementation("org.flywaydb:flyway-core")
@@ -33,7 +34,7 @@ dependencies {
 	implementation("com.querydsl:querydsl-core")
 	implementation("com.infobip:infobip-spring-data-r2dbc-querydsl-boot-starter:9.0.2")
 	implementation("com.graphql-java:graphql-java-extended-scalars:21.0")
-	implementation("io.dapr:dapr-sdk-springboot:1.10.0")
+	implementation("io.dapr:dapr-sdk-springboot:1.11.0")
 	runtimeOnly("org.postgresql:postgresql")
 	runtimeOnly("org.postgresql:r2dbc-postgresql")
 	kapt("com.querydsl:querydsl-core:5.0.0")
@@ -45,11 +46,5 @@ tasks.withType<KotlinCompile> {
 		freeCompilerArgs += "-Xjsr305=strict"
 		jvmTarget = "17"
 		javaParameters = true
-	}
-}
-
-graphql {
-	schema {
-		packages = listOf("org.misarch.discount")
 	}
 }
